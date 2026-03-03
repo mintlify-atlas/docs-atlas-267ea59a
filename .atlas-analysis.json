@@ -1,0 +1,124 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Mention Python",
+  "projectDescription": "A modern Python client library for the Mention API with full type hints and async support",
+  "theme": "palm",
+  "primaryColor": "#3B82F6",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/authentication",
+              "concepts/clients",
+              "concepts/error-handling",
+              "concepts/pagination"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/working-with-alerts",
+              "guides/managing-mentions",
+              "guides/async-usage",
+              "guides/cli-usage"
+            ]
+          },
+          {
+            "group": "Migration",
+            "pages": [
+              "migration/v0-to-v2"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Client",
+            "pages": [
+              "api/mention-client",
+              "api/async-mention-client",
+              "api/config"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "api/accounts",
+              "api/alerts",
+              "api/mentions",
+              "api/tasks",
+              "api/tags",
+              "api/shares",
+              "api/authors",
+              "api/stats"
+            ]
+          },
+          {
+            "group": "Models",
+            "pages": [
+              "api/models/alert-models",
+              "api/models/mention-models",
+              "api/models/account-models",
+              "api/models/task-models"
+            ]
+          },
+          {
+            "group": "Exceptions",
+            "pages": [
+              "api/exceptions"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Fully type-annotated client with Pydantic models",
+    "Synchronous and asynchronous API support",
+    "Automatic pagination and retry logic",
+    "Comprehensive exception handling",
+    "Command-line interface included",
+    "Rate limit handling with backoff",
+    "Context manager support",
+    "Environment-based configuration"
+  ],
+  "publicApiSurface": [
+    "MentionClient",
+    "AsyncMentionClient",
+    "MentionConfig",
+    "get_alerts()",
+    "get_mentions()",
+    "iter_mentions()",
+    "create_alert()",
+    "update_alert()",
+    "delete_alert()",
+    "curate_mention()",
+    "get_account()",
+    "get_tasks()",
+    "get_tags()",
+    "get_shares()",
+    "get_stats()",
+    "get_authors()",
+    "stream_mentions()",
+    "MentionError",
+    "MentionAPIError",
+    "MentionAuthError",
+    "MentionRateLimitError"
+  ]
+}
