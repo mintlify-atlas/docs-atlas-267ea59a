@@ -1,0 +1,155 @@
+---
+title: "Accounts"
+description: "Account resource methods for managing user accounts"
+---
+
+The Account resource provides methods for creating, retrieving, updating, and deleting user accounts in the Mention API.
+
+## create_account
+
+Create a new account.
+
+```python
+account = client.create_account(
+    name="John Doe",
+    email="john@example.com",
+    password="secure_password",
+    company="Acme Corp",
+    language="en",
+    timezone="UTC"
+)
+```
+
+### Parameters
+
+<ParamField path="name" type="str" required>
+  Account name
+</ParamField>
+
+<ParamField path="email" type="str" required>
+  Account email address
+</ParamField>
+
+<ParamField path="password" type="str" required>
+  Account password
+</ParamField>
+
+<ParamField path="company" type="str | None" default="None">
+  Company name (optional)
+</ParamField>
+
+<ParamField path="language" type="str" default="en">
+  Language code (default: en)
+</ParamField>
+
+<ParamField path="timezone" type="str" default="UTC">
+  Timezone (default: UTC)
+</ParamField>
+
+### Returns
+
+<ResponseField name="account" type="Account">
+  Created [Account](/api/models/account-models) object
+</ResponseField>
+
+## get_account
+
+Retrieve account information by ID.
+
+```python
+account = client.get_account("account-id")
+print(account.name)
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="account" type="Account">
+  [Account](/api/models/account-models) object
+</ResponseField>
+
+## get_account_me
+
+Retrieve current user's account information.
+
+```python
+account = client.get_account_me()
+print(f"Logged in as: {account.name}")
+```
+
+### Returns
+
+<ResponseField name="account" type="Account">
+  [Account](/api/models/account-models) object for the authenticated user
+</ResponseField>
+
+## update_account
+
+Update account information.
+
+```python
+account = client.update_account(
+    account_id="account-id",
+    name="Jane Doe",
+    company="New Company Inc"
+)
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="name" type="str | None" default="None">
+  New account name (optional)
+</ParamField>
+
+<ParamField path="email" type="str | None" default="None">
+  New email address (optional)
+</ParamField>
+
+<ParamField path="company" type="str | None" default="None">
+  New company name (optional)
+</ParamField>
+
+<ParamField path="language" type="str | None" default="None">
+  New language code (optional)
+</ParamField>
+
+<ParamField path="timezone" type="str | None" default="None">
+  New timezone (optional)
+</ParamField>
+
+### Returns
+
+<ResponseField name="account" type="Account">
+  Updated [Account](/api/models/account-models) object
+</ResponseField>
+
+## delete_account
+
+Delete an account.
+
+```python
+success = client.delete_account("account-id")
+if success:
+    print("Account deleted successfully")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="success" type="bool">
+  True if deletion was successful
+</ResponseField>

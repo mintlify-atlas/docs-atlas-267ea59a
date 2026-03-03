@@ -1,0 +1,209 @@
+---
+title: Account Models
+description: Pydantic models for working with accounts in the Mention Python SDK
+---
+
+## Account
+
+Represents a Mention account with quota, statistics, and settings. Inherits from `TimestampMixin` and `MentionBaseModel`.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the account
+</ResponseField>
+
+<ResponseField name="name" type="string | None">
+  Name of the account
+</ResponseField>
+
+<ResponseField name="email" type="string | None">
+  Email address associated with the account
+</ResponseField>
+
+<ResponseField name="company" type="string | None">
+  Company name
+</ResponseField>
+
+<ResponseField name="plan" type="string | None">
+  Subscription plan name (e.g., "free", "pro", "enterprise")
+</ResponseField>
+
+<ResponseField name="quota" type="AccountQuota | None">
+  Account quota and limits
+</ResponseField>
+
+<ResponseField name="stats" type="AccountStats | None">
+  Account usage statistics
+</ResponseField>
+
+<ResponseField name="timezone" type="string | None">
+  Timezone setting for the account
+</ResponseField>
+
+<ResponseField name="language" type="string | None">
+  Preferred language code
+</ResponseField>
+
+<ResponseField name="features" type="list[string]" default="[]">
+  List of enabled features for this account
+</ResponseField>
+
+<ResponseField name="is_admin" type="boolean" default="false">
+  Whether the current user has admin privileges
+</ResponseField>
+
+<ResponseField name="subscription_expires_at" type="datetime | None">
+  Timestamp when the subscription expires
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime | None">
+  Timestamp when the account was created
+</ResponseField>
+
+<ResponseField name="updated_at" type="datetime | None">
+  Timestamp when the account was last updated
+</ResponseField>
+
+```python
+from mention import Account
+
+account = client.get_account(account_id="account-id")
+
+print(f"Account: {account.name}")
+print(f"Plan: {account.plan}")
+print(f"Email: {account.email}")
+print(f"Admin: {account.is_admin}")
+
+if account.quota:
+    print(f"Alerts quota: {account.quota.alerts}")
+    print(f"Mentions quota: {account.quota.mentions}")
+
+if account.stats:
+    print(f"Total alerts: {account.stats.alerts_count}")
+    print(f"Total mentions: {account.stats.mentions_count}")
+    print(f"Unread mentions: {account.stats.unread_mentions_count}")
+```
+
+---
+
+## AccountQuota
+
+Account quota and limits. Inherits from `MentionBaseModel`.
+
+<ResponseField name="alerts" type="integer | None">
+  Maximum number of alerts allowed
+</ResponseField>
+
+<ResponseField name="mentions" type="integer | None">
+  Maximum number of mentions that can be stored
+</ResponseField>
+
+<ResponseField name="mentions_without_archive" type="integer | None">
+  Maximum number of active mentions (excluding archived)
+</ResponseField>
+
+<ResponseField name="api_calls" type="integer | None">
+  Maximum number of API calls per period
+</ResponseField>
+
+```python
+from mention import AccountQuota
+
+account = client.get_account(account_id="account-id")
+
+if account.quota:
+    quota = account.quota
+    print(f"Alert limit: {quota.alerts}")
+    print(f"Mention limit: {quota.mentions}")
+    print(f"API calls limit: {quota.api_calls}")
+    
+    # Check if approaching limits
+    if account.stats:
+        alerts_remaining = quota.alerts - account.stats.alerts_count
+        print(f"Alerts remaining: {alerts_remaining}")
+```
+
+---
+
+## AccountStats
+
+Account usage statistics. Inherits from `MentionBaseModel`.
+
+<ResponseField name="alerts_count" type="integer" default="0">
+  Current number of alerts in the account
+</ResponseField>
+
+<ResponseField name="mentions_count" type="integer" default="0">
+  Total number of mentions in the account
+</ResponseField>
+
+<ResponseField name="unread_mentions_count" type="integer" default="0">
+  Number of unread mentions across all alerts
+</ResponseField>
+
+```python
+from mention import AccountStats
+
+account = client.get_account(account_id="account-id")
+
+if account.stats:
+    stats = account.stats
+    print(f"Total alerts: {stats.alerts_count}")
+    print(f"Total mentions: {stats.mentions_count}")
+    print(f"Unread mentions: {stats.unread_mentions_count}")
+    
+    # Calculate read percentage
+    if stats.mentions_count > 0:
+        read_count = stats.mentions_count - stats.unread_mentions_count
+        read_percentage = (read_count / stats.mentions_count) * 100
+        print(f"Read percentage: {read_percentage:.1f}%")
+```
+
+---
+
+## Usage Example
+
+Complete example showing how to work with account models:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-access-token")
+
+# Get account information
+account = client.get_account(account_id="account-id")
+
+print(f"\nAccount Information:")
+print(f"  Name: {account.name}")
+print(f"  Email: {account.email}")
+print(f"  Company: {account.company}")
+print(f"  Plan: {account.plan}")
+print(f"  Timezone: {account.timezone}")
+print(f"  Language: {account.language}")
+print(f"  Admin: {account.is_admin}")
+
+# Check quota
+if account.quota:
+    print(f"\nQuota:")
+    print(f"  Alerts: {account.quota.alerts}")
+    print(f"  Mentions: {account.quota.mentions}")
+    print(f"  API Calls: {account.quota.api_calls}")
+
+# Check statistics
+if account.stats:
+    print(f"\nStatistics:")
+    print(f"  Alerts: {account.stats.alerts_count}")
+    print(f"  Mentions: {account.stats.mentions_count}")
+    print(f"  Unread: {account.stats.unread_mentions_count}")
+
+# Check enabled features
+if account.features:
+    print(f"\nEnabled Features:")
+    for feature in account.features:
+        print(f"  - {feature}")
+
+# Check subscription expiry
+if account.subscription_expires_at:
+    from datetime import datetime
+    days_remaining = (account.subscription_expires_at - datetime.now()).days
+    print(f"\nSubscription expires in {days_remaining} days")
+```

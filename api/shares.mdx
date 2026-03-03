@@ -1,0 +1,165 @@
+---
+title: "Shares"
+description: "Share resource methods for managing alert shares"
+---
+
+The Share resource provides methods for creating, retrieving, updating, and deleting shares for alerts.
+
+## get_shares
+
+Fetch all shares for an alert.
+
+```python
+response = client.get_shares("account-id", "alert-id")
+for share in response.shares:
+    print(f"Share: {share.name}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="response" type="SharesResponse">
+  [SharesResponse](/api/models/task-models) containing list of shares
+</ResponseField>
+
+## get_share
+
+Fetch a single share by ID.
+
+```python
+share = client.get_share("account-id", "alert-id", "share-id")
+print(f"Share name: {share.name}")
+print(f"URL: {share.url}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="share_id" type="str" required>
+  The share ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="share" type="Share">
+  [Share](/api/models/task-models) object
+</ResponseField>
+
+## create_share
+
+Create a new share for an alert.
+
+```python
+from mention import CreateShareRequest
+
+request = CreateShareRequest(
+    name="Public Dashboard",
+    description="Shared metrics dashboard",
+    public=True
+)
+share = client.create_share("account-id", "alert-id", request)
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="request" type="CreateShareRequest" required>
+  Share creation request
+</ParamField>
+
+### Returns
+
+<ResponseField name="share" type="Share">
+  Created [Share](/api/models/task-models) object
+</ResponseField>
+
+## update_share
+
+Update an existing share.
+
+```python
+from mention import UpdateShareRequest
+
+request = UpdateShareRequest(
+    name="Updated Dashboard",
+    public=False
+)
+share = client.update_share("account-id", "alert-id", "share-id", request)
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="share_id" type="str" required>
+  The share ID
+</ParamField>
+
+<ParamField path="request" type="UpdateShareRequest" required>
+  Share update request
+</ParamField>
+
+### Returns
+
+<ResponseField name="share" type="Share">
+  Updated [Share](/api/models/task-models) object
+</ResponseField>
+
+## delete_share
+
+Delete a share.
+
+```python
+success = client.delete_share("account-id", "alert-id", "share-id")
+if success:
+    print("Share deleted successfully")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="share_id" type="str" required>
+  The share ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="success" type="bool">
+  True if deletion was successful
+</ResponseField>

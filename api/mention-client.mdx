@@ -1,0 +1,1038 @@
+---
+title: MentionClient
+description: Synchronous client for the Mention API with full type hints and automatic request/response validation
+---
+
+## Overview
+
+The `MentionClient` class provides a typed interface for interacting with all Mention API endpoints. It handles authentication, request retries, error handling, and response validation automatically.
+
+## Constructor
+
+<ParamField path="access_token" type="str" required>
+  OAuth2 access token for authentication
+</ParamField>
+
+<ParamField path="base_url" type="str" default="https://api.mention.net/api">
+  Base URL for the Mention API
+</ParamField>
+
+<ParamField path="timeout" type="float" default="30.0">
+  Request timeout in seconds
+</ParamField>
+
+<ParamField path="max_retries" type="int" default="3">
+  Maximum number of retry attempts for failed requests
+</ParamField>
+
+<ParamField path="retry_delay" type="float" default="1.0">
+  Base delay between retries in seconds (uses exponential backoff)
+</ParamField>
+
+## Class Methods
+
+### from_config
+
+Create a client from a `MentionConfig` instance.
+
+```python
+from mention import MentionClient, MentionConfig
+
+config = MentionConfig.from_env()
+client = MentionClient.from_config(config)
+```
+
+<ParamField path="config" type="MentionConfig" required>
+  Configuration object containing access token and client settings
+</ParamField>
+
+<ResponseField name="return" type="MentionClient">
+  Configured MentionClient instance
+</ResponseField>
+
+## Context Manager Support
+
+The client supports context manager protocol for automatic resource cleanup:
+
+```python
+with MentionClient(access_token="your-token") as client:
+    alerts = client.get_alerts("account-id")
+    # Client is automatically closed when exiting the context
+```
+
+## App Data Methods
+
+### get_app_data
+
+Retrieve application data including available sources, languages, and other configuration.
+
+```python
+app_data = client.get_app_data()
+print(app_data.sources)
+```
+
+<ResponseField name="return" type="AppData">
+  Application configuration and metadata
+</ResponseField>
+
+## Account Methods
+
+### create_account
+
+Create a new Mention account.
+
+<ParamField path="name" type="str" required>
+  Account name
+</ParamField>
+
+<ParamField path="email" type="str" required>
+  Account email address
+</ParamField>
+
+<ParamField path="password" type="str" required>
+  Account password
+</ParamField>
+
+<ParamField path="company" type="str | None" default="None">
+  Company name (optional)
+</ParamField>
+
+<ParamField path="language" type="str" default="en">
+  Language code
+</ParamField>
+
+<ParamField path="timezone" type="str" default="UTC">
+  Timezone identifier
+</ParamField>
+
+<ResponseField name="return" type="Account">
+  Created Account object
+</ResponseField>
+
+### get_account
+
+Retrieve account information by ID.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ResponseField name="return" type="Account">
+  Account object
+</ResponseField>
+
+### get_account_me
+
+Retrieve the current authenticated user's account information.
+
+```python
+account = client.get_account_me()
+print(account.name)
+```
+
+<ResponseField name="return" type="Account">
+  Account object for the authenticated user
+</ResponseField>
+
+### update_account
+
+Update account information. All parameters except `account_id` are optional.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="name" type="str | None" default="None">
+  New account name
+</ParamField>
+
+<ParamField path="email" type="str | None" default="None">
+  New email address
+</ParamField>
+
+<ParamField path="company" type="str | None" default="None">
+  New company name
+</ParamField>
+
+<ParamField path="language" type="str | None" default="None">
+  New language code
+</ParamField>
+
+<ParamField path="timezone" type="str | None" default="None">
+  New timezone identifier
+</ParamField>
+
+<ResponseField name="return" type="Account">
+  Updated Account object
+</ResponseField>
+
+### delete_account
+
+Delete an account.
+
+<ParamField path="account_id" type="str" required>
+  The account ID to delete
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if deletion was successful
+</ResponseField>
+
+## Alert Methods
+
+### get_alerts
+
+Fetch all alerts for an account.
+
+```python
+response = client.get_alerts("account-id")
+for alert in response.alerts:
+    print(alert.name)
+```
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ResponseField name="return" type="AlertsResponse">
+  Response containing list of alerts
+</ResponseField>
+
+### get_alert
+
+Fetch a single alert by ID.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ResponseField name="return" type="Alert">
+  Alert object
+</ResponseField>
+
+### create_alert
+
+Create a new alert.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="request" type="CreateAlertRequest" required>
+  Alert creation request with configuration
+</ParamField>
+
+<ResponseField name="return" type="Alert">
+  Created Alert object
+</ResponseField>
+
+### update_alert
+
+Update an existing alert.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="request" type="UpdateAlertRequest" required>
+  Alert update request
+</ParamField>
+
+<ResponseField name="return" type="Alert">
+  Updated Alert object
+</ResponseField>
+
+### delete_alert
+
+Delete an alert.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if deletion was successful
+</ResponseField>
+
+### pause_alert
+
+Pause an alert to stop monitoring.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if pause was successful
+</ResponseField>
+
+### unpause_alert
+
+Unpause an alert to resume monitoring.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if unpause was successful
+</ResponseField>
+
+## Mention Methods
+
+### get_mentions
+
+Fetch mentions for an alert with optional filtering.
+
+```python
+response = client.get_mentions(
+    "account-id",
+    "alert-id",
+    limit=50,
+    read=False,
+    tone="positive"
+)
+for mention in response.mentions:
+    print(mention.title)
+```
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="limit" type="int" default="100">
+  Maximum number of mentions to return (max 1000)
+</ParamField>
+
+<ParamField path="before_date" type="datetime | str | None" default="None">
+  Return mentions before this date
+</ParamField>
+
+<ParamField path="not_before_date" type="datetime | str | None" default="None">
+  Return mentions on or after this date
+</ParamField>
+
+<ParamField path="since_id" type="str | None" default="None">
+  Return mentions since this mention ID
+</ParamField>
+
+<ParamField path="source" type="str | None" default="None">
+  Filter by source type (e.g., "twitter", "news")
+</ParamField>
+
+<ParamField path="read" type="bool | None" default="None">
+  Filter by read status
+</ParamField>
+
+<ParamField path="favorite" type="bool | None" default="None">
+  Filter by favorite status
+</ParamField>
+
+<ParamField path="tone" type="str | None" default="None">
+  Filter by tone ("positive", "negative", "neutral")
+</ParamField>
+
+<ParamField path="cursor" type="str | None" default="None">
+  Pagination cursor from previous response
+</ParamField>
+
+<ResponseField name="return" type="MentionsResponse">
+  Response containing list of mentions and pagination info
+</ResponseField>
+
+### iter_mentions
+
+Iterate over all mentions with automatic pagination.
+
+```python
+for mention in client.iter_mentions("account-id", "alert-id", limit=100):
+    print(mention.title)
+```
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="limit" type="int" default="100">
+  Number of mentions per page
+</ParamField>
+
+<ParamField path="**kwargs" type="Any">
+  Additional filters (see get_mentions)
+</ParamField>
+
+<ResponseField name="yields" type="Mention">
+  Individual Mention objects
+</ResponseField>
+
+### get_mention
+
+Fetch a single mention by ID.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ResponseField name="return" type="Mention">
+  Mention object
+</ResponseField>
+
+### curate_mention
+
+Update or curate a mention (mark as read, favorite, set tone, etc.).
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ParamField path="request" type="CurateMentionRequest" required>
+  Curation request with updates
+</ParamField>
+
+<ResponseField name="return" type="Mention">
+  Updated Mention object
+</ResponseField>
+
+### mark_all_mentions_read
+
+Mark all mentions for an alert as read.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if successful
+</ResponseField>
+
+### get_mention_children
+
+Fetch child mentions (replies, comments) of a mention.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The parent mention ID
+</ParamField>
+
+<ResponseField name="return" type="MentionsResponse">
+  Response containing child mentions
+</ResponseField>
+
+### stream_mentions
+
+Stream mentions in real-time using long-polling.
+
+```python
+from datetime import datetime
+
+for mention in client.stream_mentions("account-id", "alert-id", since=datetime.now()):
+    print(f"New mention: {mention.title}")
+```
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="since" type="datetime | str | None" default="None">
+  Start streaming from this timestamp
+</ParamField>
+
+<ResponseField name="yields" type="Mention">
+  Mention objects as they arrive
+</ResponseField>
+
+## Task Methods
+
+### get_tasks
+
+Fetch all tasks for an alert.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ResponseField name="return" type="TasksResponse">
+  Response containing list of tasks
+</ResponseField>
+
+### get_mention_tasks
+
+Fetch all tasks for a specific mention.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ResponseField name="return" type="TasksResponse">
+  Response containing list of tasks
+</ResponseField>
+
+### get_task
+
+Fetch a single task by ID.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ParamField path="task_id" type="str" required>
+  The task ID
+</ParamField>
+
+<ResponseField name="return" type="Task">
+  Task object
+</ResponseField>
+
+### create_task
+
+Create a new task for a mention.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ParamField path="request" type="CreateTaskRequest" required>
+  Task creation request
+</ParamField>
+
+<ResponseField name="return" type="Task">
+  Created Task object
+</ResponseField>
+
+### update_task
+
+Update an existing task.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ParamField path="task_id" type="str" required>
+  The task ID
+</ParamField>
+
+<ParamField path="request" type="UpdateTaskRequest" required>
+  Task update request
+</ParamField>
+
+<ResponseField name="return" type="Task">
+  Updated Task object
+</ResponseField>
+
+### delete_task
+
+Delete a task.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ParamField path="task_id" type="str" required>
+  The task ID
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if deletion was successful
+</ResponseField>
+
+## Tag Methods
+
+### get_tags
+
+Fetch all tags for an alert.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ResponseField name="return" type="TagsResponse">
+  Response containing list of tags
+</ResponseField>
+
+### create_tag
+
+Create a new tag for an alert.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="request" type="CreateTagRequest" required>
+  Tag creation request
+</ParamField>
+
+<ResponseField name="return" type="Tag">
+  Created Tag object
+</ResponseField>
+
+### update_tag
+
+Update an existing tag.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="tag_id" type="str" required>
+  The tag ID
+</ParamField>
+
+<ParamField path="request" type="UpdateTagRequest" required>
+  Tag update request
+</ParamField>
+
+<ResponseField name="return" type="Tag">
+  Updated Tag object
+</ResponseField>
+
+### delete_tag
+
+Delete a tag.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="tag_id" type="str" required>
+  The tag ID
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if deletion was successful
+</ResponseField>
+
+## Share Methods
+
+### get_shares
+
+Fetch all shares for an alert.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ResponseField name="return" type="SharesResponse">
+  Response containing list of shares
+</ResponseField>
+
+### get_share
+
+Fetch a single share by ID.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="share_id" type="str" required>
+  The share ID
+</ParamField>
+
+<ResponseField name="return" type="Share">
+  Share object
+</ResponseField>
+
+### create_share
+
+Create a new share for an alert.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="request" type="CreateShareRequest" required>
+  Share creation request
+</ParamField>
+
+<ResponseField name="return" type="Share">
+  Created Share object
+</ResponseField>
+
+### update_share
+
+Update an existing share.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="share_id" type="str" required>
+  The share ID
+</ParamField>
+
+<ParamField path="request" type="UpdateShareRequest" required>
+  Share update request
+</ParamField>
+
+<ResponseField name="return" type="Share">
+  Updated Share object
+</ResponseField>
+
+### delete_share
+
+Delete a share.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="share_id" type="str" required>
+  The share ID
+</ParamField>
+
+<ResponseField name="return" type="bool">
+  True if deletion was successful
+</ResponseField>
+
+## Preference Methods
+
+### get_preferences
+
+Fetch preferences for an alert.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ResponseField name="return" type="AlertPreferences">
+  Alert preferences object
+</ResponseField>
+
+### update_preferences
+
+Update preferences for an alert.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="request" type="UpdatePreferencesRequest" required>
+  Preferences update request
+</ParamField>
+
+<ResponseField name="return" type="AlertPreferences">
+  Updated alert preferences object
+</ResponseField>
+
+## Author Methods
+
+### get_authors
+
+Fetch authors/influencers for an alert.
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="limit" type="int" default="100">
+  Maximum number of authors to return
+</ParamField>
+
+<ParamField path="sort_by" type="str | None" default="None">
+  Sort field (e.g., "mentions", "reach", "influence")
+</ParamField>
+
+<ResponseField name="return" type="AuthorsResponse">
+  Response containing list of authors
+</ResponseField>
+
+## Statistics Methods
+
+### get_stats
+
+Fetch statistics for an account or alert.
+
+```python
+from datetime import datetime
+from mention import StatsPeriod
+
+stats = client.get_stats(
+    "account-id",
+    alert_id="alert-id",
+    from_date=datetime(2024, 1, 1),
+    to_date=datetime(2024, 1, 31),
+    period=StatsPeriod.DAY
+)
+print(stats.mentions_count)
+```
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str | None" default="None">
+  The alert ID (if None, returns account-level stats)
+</ParamField>
+
+<ParamField path="from_date" type="datetime | str | None" default="None">
+  Start date for statistics period
+</ParamField>
+
+<ParamField path="to_date" type="datetime | str | None" default="None">
+  End date for statistics period
+</ParamField>
+
+<ParamField path="period" type="StatsPeriod" default="StatsPeriod.DAY">
+  Time grouping period (HOUR, DAY, WEEK, MONTH)
+</ParamField>
+
+<ResponseField name="return" type="StatsResponse">
+  Response containing statistics data
+</ResponseField>
+
+## Resource Management
+
+### close
+
+Manually close the underlying HTTP client. Usually not needed if using context manager.
+
+```python
+client = MentionClient(access_token="token")
+try:
+    # Use client
+    pass
+finally:
+    client.close()
+```
+
+## Usage Examples
+
+### Basic Usage
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-access-token")
+
+# Get alerts
+alerts = client.get_alerts("account-id")
+for alert in alerts.alerts:
+    print(alert.name)
+
+# Get mentions
+mentions = client.get_mentions("account-id", "alert-id", limit=50)
+for mention in mentions.mentions:
+    print(mention.title)
+
+client.close()
+```
+
+### Using Configuration
+
+```python
+from mention import MentionClient, MentionConfig
+
+# Load from environment variables
+config = MentionConfig.from_env()
+client = MentionClient.from_config(config)
+
+app_data = client.get_app_data()
+print(app_data.sources)
+```
+
+### Context Manager
+
+```python
+with MentionClient(access_token="token") as client:
+    account = client.get_account_me()
+    alerts = client.get_alerts(account.id)
+```
+
+### Pagination
+
+```python
+# Automatic pagination
+for mention in client.iter_mentions("account-id", "alert-id"):
+    print(mention.title)
+
+# Manual pagination
+cursor = None
+while True:
+    response = client.get_mentions(
+        "account-id",
+        "alert-id",
+        cursor=cursor,
+        limit=100
+    )
+    for mention in response.mentions:
+        print(mention.title)
+    
+    if not response.has_more:
+        break
+    cursor = response.links.more
+```
+
+### Error Handling
+
+```python
+from mention import MentionClient
+from mention.exceptions import (
+    MentionAuthError,
+    MentionNotFoundError,
+    MentionRateLimitError,
+    MentionAPIError
+)
+
+client = MentionClient(access_token="token")
+
+try:
+    alert = client.get_alert("account-id", "alert-id")
+except MentionAuthError:
+    print("Invalid credentials")
+except MentionNotFoundError:
+    print("Alert not found")
+except MentionRateLimitError as e:
+    print(f"Rate limited. Retry after {e.retry_after} seconds")
+except MentionAPIError as e:
+    print(f"API error: {e.message}")
+```

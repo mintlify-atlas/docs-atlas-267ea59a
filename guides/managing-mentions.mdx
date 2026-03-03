@@ -1,0 +1,452 @@
+---
+title: "Managing Mentions"
+description: "Retrieve, filter, curate, and stream mentions from your alerts"
+---
+
+## Overview
+
+Mentions are the results captured by your alerts. This guide covers how to retrieve, filter, update, and stream mentions using the Mention Python SDK.
+
+## Getting Mentions
+
+Retrieve mentions for a specific alert:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Get mentions for an alert
+response = client.get_mentions(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    limit=100
+)
+
+print(f"Found {len(response.mentions)} mentions")
+for mention in response.mentions:
+    print(f"- {mention.title}")
+    print(f"  Source: {mention.source_name}")
+    print(f"  Tone: {mention.tone}")
+    print(f"  URL: {mention.original_url}")
+```
+
+## Filtering Mentions
+
+The `get_mentions()` method supports powerful filtering options:
+
+<Tabs>
+  <Tab title="By Source">
+    Filter mentions by their source:
+
+    ```python
+    # Get only Twitter mentions
+    response = client.get_mentions(
+        account_id="your-account-id",
+        alert_id="alert-123",
+        source="twitter",
+        limit=50
+    )
+
+    print(f"Twitter mentions: {len(response.mentions)}")
+    ```
+  </Tab>
+  
+  <Tab title="By Tone">
+    Filter by sentiment/tone:
+
+    ```python
+    # Get only positive mentions
+    response = client.get_mentions(
+        account_id="your-account-id",
+        alert_id="alert-123",
+        tone="positive",
+        limit=50
+    )
+
+    print(f"Positive mentions: {len(response.mentions)}")
+    ```
+
+    Available tones: `positive`, `negative`, `neutral`
+  </Tab>
+  
+  <Tab title="By Read Status">
+    Filter by read/unread status:
+
+    ```python
+    # Get only unread mentions
+    response = client.get_mentions(
+        account_id="your-account-id",
+        alert_id="alert-123",
+        read=False,
+        limit=50
+    )
+
+    print(f"Unread mentions: {len(response.mentions)}")
+    ```
+  </Tab>
+  
+  <Tab title="By Favorite">
+    Filter by favorite status:
+
+    ```python
+    # Get favorite mentions
+    response = client.get_mentions(
+        account_id="your-account-id",
+        alert_id="alert-123",
+        favorite=True
+    )
+
+    print(f"Favorite mentions: {len(response.mentions)}")
+    ```
+  </Tab>
+</Tabs>
+
+### Combined Filters
+
+Combine multiple filters for precise queries:
+
+```python
+from datetime import datetime, timedelta
+
+# Get unread, positive Twitter mentions from the last 7 days
+response = client.get_mentions(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    source="twitter",
+    tone="positive",
+    read=False,
+    not_before_date=datetime.now() - timedelta(days=7),
+    limit=100
+)
+
+print(f"Found {len(response.mentions)} matching mentions")
+```
+
+## Getting a Single Mention
+
+Retrieve detailed information about a specific mention:
+
+```python
+mention = client.get_mention(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    mention_id="mention-456"
+)
+
+print(f"Title: {mention.title}")
+print(f"Description: {mention.description}")
+print(f"Published: {mention.published_at}")
+print(f"Reach: {mention.reach}")
+print(f"Engagement: {mention.engagement}")
+if mention.author:
+    print(f"Author: {mention.author.name} (@{mention.author.username})")
+    print(f"Followers: {mention.author.followers_count}")
+```
+
+## Curating Mentions
+
+Update mention properties like read status, favorite, tone, or tags:
+
+<Steps>
+
+<Step title="Import the request model">
+```python
+from mention import MentionClient
+from mention.models import CurateMentionRequest, Tone
+```
+</Step>
+
+<Step title="Create the curation request">
+```python
+request = CurateMentionRequest(
+    read=True,
+    favorite=True,
+    tone=Tone.POSITIVE,
+    tags=["important", "follow-up"]
+)
+```
+</Step>
+
+<Step title="Apply the changes">
+```python
+updated_mention = client.curate_mention(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    mention_id="mention-456",
+    request=request
+)
+
+print(f"Updated: {updated_mention.title}")
+print(f"Favorite: {updated_mention.favorite}")
+print(f"Read: {updated_mention.read}")
+```
+</Step>
+
+</Steps>
+
+### Common Curation Operations
+
+<CodeGroup>
+
+```python Mark as Read
+from mention.models import CurateMentionRequest
+
+client.curate_mention(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    mention_id="mention-456",
+    request=CurateMentionRequest(read=True)
+)
+```
+
+```python Add to Favorites
+from mention.models import CurateMentionRequest
+
+client.curate_mention(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    mention_id="mention-456",
+    request=CurateMentionRequest(favorite=True)
+)
+```
+
+```python Change Tone
+from mention.models import CurateMentionRequest, Tone
+
+client.curate_mention(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    mention_id="mention-456",
+    request=CurateMentionRequest(tone=Tone.NEGATIVE)
+)
+```
+
+```python Move to Trash
+from mention.models import CurateMentionRequest
+
+client.curate_mention(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    mention_id="mention-456",
+    request=CurateMentionRequest(trashed=True)
+)
+```
+
+</CodeGroup>
+
+## Marking All Mentions as Read
+
+Mark all mentions for an alert as read in one operation:
+
+```python
+client.mark_all_mentions_read(
+    account_id="your-account-id",
+    alert_id="alert-123"
+)
+
+print("All mentions marked as read")
+```
+
+## Getting Child Mentions
+
+Retrieve replies and comments for a specific mention:
+
+```python
+# Get child mentions (replies/comments)
+children = client.get_mention_children(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    mention_id="mention-456"
+)
+
+print(f"Found {len(children.mentions)} replies/comments")
+for child in children.mentions:
+    print(f"- {child.description_short}")
+    if child.author:
+        print(f"  By: {child.author.name}")
+```
+
+## Paginating Through Mentions
+
+Manually handle pagination using cursors:
+
+```python
+cursor = None
+all_mentions = []
+
+while True:
+    response = client.get_mentions(
+        account_id="your-account-id",
+        alert_id="alert-123",
+        limit=100,
+        cursor=cursor
+    )
+    
+    all_mentions.extend(response.mentions)
+    
+    if not response.has_more:
+        break
+    
+    cursor = response.links.more if response.links else None
+    if not cursor:
+        break
+
+print(f"Retrieved {len(all_mentions)} total mentions")
+```
+
+## Streaming Mentions
+
+For better handling of large result sets, use the iterator pattern:
+
+```python
+# Iterate through all mentions automatically
+count = 0
+for mention in client.iter_mentions(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    limit=100  # Per-page limit
+):
+    count += 1
+    print(f"{count}. {mention.title}")
+    
+    # Process each mention
+    if mention.tone == "negative":
+        print("  ⚠️ Negative sentiment detected")
+
+print(f"Processed {count} mentions")
+```
+
+### Streaming with Filters
+
+Apply filters while streaming:
+
+```python
+# Stream only unread, positive mentions
+for mention in client.iter_mentions(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    read=False,
+    tone="positive",
+    limit=50
+):
+    print(f"Unread positive: {mention.title}")
+```
+
+## Real-Time Mention Streaming
+
+Stream new mentions as they arrive in real-time:
+
+```python
+from datetime import datetime
+
+print("Starting real-time mention stream...")
+print("Press Ctrl+C to stop")
+
+try:
+    for mention in client.stream_mentions(
+        account_id="your-account-id",
+        alert_id="alert-123",
+        since=datetime.now()
+    ):
+        print(f"\n🔔 New mention: {mention.title}")
+        print(f"   Source: {mention.source_name}")
+        print(f"   URL: {mention.original_url}")
+        print(f"   Published: {mention.published_at}")
+except KeyboardInterrupt:
+    print("\nStream stopped")
+```
+
+<Note>
+The `stream_mentions()` method uses long-polling to continuously fetch new mentions as they arrive.
+</Note>
+
+## Complete Workflow Example
+
+Here's a complete example of managing mentions:
+
+```python
+from mention import MentionClient
+from mention.models import CurateMentionRequest, Tone
+
+client = MentionClient(access_token="your-token")
+account_id = "your-account-id"
+alert_id = "alert-123"
+
+# Get unread mentions
+response = client.get_mentions(
+    account_id=account_id,
+    alert_id=alert_id,
+    read=False,
+    limit=50
+)
+
+print(f"Processing {len(response.mentions)} unread mentions...\n")
+
+for mention in response.mentions:
+    print(f"📄 {mention.title}")
+    print(f"   Tone: {mention.tone}")
+    
+    # Auto-favorite positive mentions
+    if mention.tone == Tone.POSITIVE:
+        client.curate_mention(
+            account_id=account_id,
+            alert_id=alert_id,
+            mention_id=mention.id,
+            request=CurateMentionRequest(
+                favorite=True,
+                read=True
+            )
+        )
+        print("   ⭐ Added to favorites")
+    
+    # Trash spam mentions
+    elif mention.tone == Tone.NEGATIVE and "spam" in mention.description.lower():
+        client.curate_mention(
+            account_id=account_id,
+            alert_id=alert_id,
+            mention_id=mention.id,
+            request=CurateMentionRequest(trashed=True)
+        )
+        print("   🗑️ Moved to trash")
+    
+    print()
+
+# Mark remaining as read
+client.mark_all_mentions_read(account_id, alert_id)
+print("✓ All mentions marked as read")
+
+client.close()
+```
+
+## Error Handling
+
+Handle errors when working with mentions:
+
+```python
+from mention.exceptions import (
+    MentionNotFoundError,
+    MentionAPIError,
+    MentionRateLimitError
+)
+
+try:
+    mention = client.get_mention(account_id, alert_id, "invalid-id")
+except MentionNotFoundError:
+    print("Mention not found")
+except MentionRateLimitError as e:
+    print(f"Rate limited. Retry after {e.retry_after} seconds")
+except MentionAPIError as e:
+    print(f"API error: {e}")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Working with Alerts" icon="bell" href="/guides/working-with-alerts">
+    Learn how to create and manage alerts
+  </Card>
+  <Card title="Async Usage" icon="bolt" href="/guides/async-usage">
+    Use async patterns for better performance
+  </Card>
+</CardGroup>

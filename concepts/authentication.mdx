@@ -1,0 +1,119 @@
+---
+title: Authentication
+description: Learn how to authenticate with the Mention API using OAuth2 access tokens
+---
+
+The Mention Python SDK uses OAuth2 access tokens for authentication. All API requests require a valid access token to be provided when initializing the client.
+
+## Access token requirement
+
+Both `MentionClient` and `AsyncMentionClient` require an `access_token` parameter during initialization:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-oauth2-token")
+```
+
+<Note>
+The SDK does not handle OAuth2 token generation. You must obtain an access token through Mention's OAuth2 flow before using the SDK.
+</Note>
+
+## Using environment variables
+
+The recommended approach is to store your access token in environment variables and load it using `MentionConfig`:
+
+### Setting environment variables
+
+Create a `.env` file in your project root:
+
+```bash
+MENTION_ACCESS_TOKEN=your-oauth2-token
+MENTION_ACCOUNT_ID=your-account-id  # optional
+MENTION_BASE_URL=https://api.mention.net/api  # optional
+```
+
+### Loading from environment
+
+Use `MentionConfig.from_env()` to automatically load configuration from environment variables:
+
+```python
+from mention import MentionClient, MentionConfig
+
+# Load configuration from environment variables
+config = MentionConfig.from_env()
+
+# Create client from configuration
+client = MentionClient.from_config(config)
+```
+
+The `from_env()` method looks for environment variables with the `MENTION_` prefix by default, but also falls back to unprefixed variables:
+
+- `MENTION_ACCESS_TOKEN` or `ACCESS_TOKEN` (required)
+- `MENTION_ACCOUNT_ID` or `ACCOUNT_ID` (optional)
+- `MENTION_BASE_URL` or `BASE_URL` (optional, defaults to `https://api.mention.net/api`)
+- `MENTION_TIMEOUT` or `TIMEOUT` (optional, defaults to `30.0`)
+- `MENTION_MAX_RETRIES` or `MAX_RETRIES` (optional, defaults to `3`)
+- `MENTION_RETRY_DELAY` or `RETRY_DELAY` (optional, defaults to `1.0`)
+
+### Custom .env file location
+
+You can specify a custom path to your environment file:
+
+```python
+config = MentionConfig.from_env(env_file="/path/to/.env")
+client = MentionClient.from_config(config)
+```
+
+## Direct token passing
+
+For simple use cases or testing, you can pass the token directly:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(
+    access_token="your-oauth2-token",
+    base_url="https://api.mention.net/api",  # optional
+    timeout=30.0,  # optional
+    max_retries=3,  # optional
+    retry_delay=1.0  # optional
+)
+```
+
+## Manual configuration
+
+For more control, create a `MentionConfig` object manually:
+
+```python
+from mention import MentionClient, MentionConfig
+
+config = MentionConfig(
+    access_token="your-oauth2-token",
+    account_id="your-account-id",
+    base_url="https://api.mention.net/api",
+    timeout=60.0,
+    max_retries=5,
+    retry_delay=2.0
+)
+
+client = MentionClient.from_config(config)
+```
+
+## Authentication errors
+
+If your access token is invalid or expired, the SDK will raise a `MentionAuthError`:
+
+```python
+from mention import MentionClient, MentionAuthError
+
+client = MentionClient(access_token="invalid-token")
+
+try:
+    account = client.get_account_me()
+except MentionAuthError as e:
+    print(f"Authentication failed: {e}")
+    print(f"Status code: {e.status_code}")  # 401 or 403
+```
+
+See the [error handling guide](/concepts/error-handling) for more details on handling authentication errors.

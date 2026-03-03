@@ -1,0 +1,198 @@
+---
+title: "Alerts"
+description: "Alert resource methods for managing monitoring alerts"
+---
+
+The Alert resource provides methods for creating, retrieving, updating, deleting, and controlling monitoring alerts.
+
+## get_alerts
+
+Fetch all alerts for an account.
+
+```python
+response = client.get_alerts("account-id")
+for alert in response.alerts:
+    print(f"Alert: {alert.name}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="response" type="AlertsResponse">
+  [AlertsResponse](/api/models/alert-models) containing list of alerts
+</ResponseField>
+
+## get_alert
+
+Fetch a single alert by ID.
+
+```python
+alert = client.get_alert("account-id", "alert-id")
+print(f"Alert name: {alert.name}")
+print(f"Query: {alert.query}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="alert" type="Alert">
+  [Alert](/api/models/alert-models) object
+</ResponseField>
+
+## create_alert
+
+Create a new alert.
+
+```python
+from mention import CreateAlertRequest
+
+request = CreateAlertRequest(
+    name="My Brand",
+    query="\"My Company\"",
+    languages=["en", "fr"],
+    sources=["web", "twitter"]
+)
+alert = client.create_alert("account-id", request)
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="request" type="CreateAlertRequest" required>
+  Alert creation request with configuration
+</ParamField>
+
+### Returns
+
+<ResponseField name="alert" type="Alert">
+  Created [Alert](/api/models/alert-models) object
+</ResponseField>
+
+## update_alert
+
+Update an existing alert.
+
+```python
+from mention import UpdateAlertRequest
+
+request = UpdateAlertRequest(
+    name="Updated Brand Name",
+    query="\"Updated Query\""
+)
+alert = client.update_alert("account-id", "alert-id", request)
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="request" type="UpdateAlertRequest" required>
+  Alert update request with changes
+</ParamField>
+
+### Returns
+
+<ResponseField name="alert" type="Alert">
+  Updated [Alert](/api/models/alert-models) object
+</ResponseField>
+
+## delete_alert
+
+Delete an alert.
+
+```python
+success = client.delete_alert("account-id", "alert-id")
+if success:
+    print("Alert deleted successfully")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="success" type="bool">
+  True if deletion was successful
+</ResponseField>
+
+## pause_alert
+
+Pause an alert (stop monitoring).
+
+```python
+success = client.pause_alert("account-id", "alert-id")
+if success:
+    print("Alert paused")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="success" type="bool">
+  True if pause was successful
+</ResponseField>
+
+## unpause_alert
+
+Unpause an alert (resume monitoring).
+
+```python
+success = client.unpause_alert("account-id", "alert-id")
+if success:
+    print("Alert resumed")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="success" type="bool">
+  True if unpause was successful
+</ResponseField>

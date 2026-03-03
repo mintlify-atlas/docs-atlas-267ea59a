@@ -1,0 +1,211 @@
+---
+title: "Tasks"
+description: "Task resource methods for managing mention tasks"
+---
+
+The Task resource provides methods for creating, retrieving, updating, and deleting tasks associated with mentions.
+
+## get_tasks
+
+Fetch all tasks for an alert.
+
+```python
+response = client.get_tasks("account-id", "alert-id")
+for task in response.tasks:
+    print(f"Task: {task.description}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="response" type="TasksResponse">
+  [TasksResponse](/api/models/task-models) containing list of tasks
+</ResponseField>
+
+## get_mention_tasks
+
+Fetch all tasks for a specific mention.
+
+```python
+response = client.get_mention_tasks("account-id", "alert-id", "mention-id")
+for task in response.tasks:
+    print(f"Task: {task.description}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="response" type="TasksResponse">
+  [TasksResponse](/api/models/task-models) containing list of tasks
+</ResponseField>
+
+## get_task
+
+Fetch a single task by ID.
+
+```python
+task = client.get_task("account-id", "alert-id", "mention-id", "task-id")
+print(f"Description: {task.description}")
+print(f"Status: {task.status}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ParamField path="task_id" type="str" required>
+  The task ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="task" type="Task">
+  [Task](/api/models/task-models) object
+</ResponseField>
+
+## create_task
+
+Create a new task for a mention.
+
+```python
+from mention import CreateTaskRequest
+
+request = CreateTaskRequest(
+    description="Follow up with customer",
+    due_date="2024-12-31T23:59:59Z",
+    assigned_to="user-id"
+)
+task = client.create_task("account-id", "alert-id", "mention-id", request)
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ParamField path="request" type="CreateTaskRequest" required>
+  Task creation request
+</ParamField>
+
+### Returns
+
+<ResponseField name="task" type="Task">
+  Created [Task](/api/models/task-models) object
+</ResponseField>
+
+## update_task
+
+Update an existing task.
+
+```python
+from mention import UpdateTaskRequest
+
+request = UpdateTaskRequest(
+    description="Updated task description",
+    status="completed"
+)
+task = client.update_task("account-id", "alert-id", "mention-id", "task-id", request)
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ParamField path="task_id" type="str" required>
+  The task ID
+</ParamField>
+
+<ParamField path="request" type="UpdateTaskRequest" required>
+  Task update request
+</ParamField>
+
+### Returns
+
+<ResponseField name="task" type="Task">
+  Updated [Task](/api/models/task-models) object
+</ResponseField>
+
+## delete_task
+
+Delete a task.
+
+```python
+success = client.delete_task("account-id", "alert-id", "mention-id", "task-id")
+if success:
+    print("Task deleted successfully")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ParamField path="task_id" type="str" required>
+  The task ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="success" type="bool">
+  True if deletion was successful
+</ResponseField>

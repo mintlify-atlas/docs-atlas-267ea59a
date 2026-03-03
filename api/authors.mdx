@@ -1,0 +1,72 @@
+---
+title: "Authors"
+description: "Author resource methods for retrieving influencer data"
+---
+
+The Author resource provides methods for retrieving author and influencer information for alerts.
+
+## get_authors
+
+Fetch authors/influencers for an alert.
+
+```python
+response = client.get_authors(
+    "account-id",
+    "alert-id",
+    limit=50,
+    sort_by="influence"
+)
+for author in response.authors:
+    print(f"Author: {author.name}")
+    print(f"Reach: {author.reach}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="limit" type="int" default="100">
+  Maximum number of authors to return
+</ParamField>
+
+<ParamField path="sort_by" type="str | None" default="None">
+  Sort field (mentions, reach, influence, etc.)
+</ParamField>
+
+### Returns
+
+<ResponseField name="response" type="AuthorsResponse">
+  [AuthorsResponse](/api/models/mention-models) containing list of authors
+</ResponseField>
+
+## Example
+
+Here's a complete example of fetching top influencers:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Get top influencers by reach
+response = client.get_authors(
+    account_id="account-123",
+    alert_id="alert-456",
+    limit=10,
+    sort_by="reach"
+)
+
+# Display influencer information
+for author in response.authors:
+    print(f"Name: {author.name}")
+    print(f"Reach: {author.reach:,} people")
+    print(f"Mentions: {author.mentions_count}")
+    print(f"Influence Score: {author.influence_score}")
+    print("---")
+```

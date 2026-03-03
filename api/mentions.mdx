@@ -1,0 +1,263 @@
+---
+title: "Mentions"
+description: "Mention resource methods for managing social media mentions"
+---
+
+The Mention resource provides methods for retrieving, updating, and managing social media mentions.
+
+## get_mentions
+
+Fetch mentions for an alert with filtering and pagination.
+
+```python
+response = client.get_mentions(
+    "account-id",
+    "alert-id",
+    limit=50,
+    tone="positive",
+    read=False
+)
+for mention in response.mentions:
+    print(f"Mention: {mention.title}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="limit" type="int" default="100">
+  Maximum number of mentions to return (max 1000)
+</ParamField>
+
+<ParamField path="before_date" type="datetime | str | None" default="None">
+  Return mentions before this date
+</ParamField>
+
+<ParamField path="not_before_date" type="datetime | str | None" default="None">
+  Return mentions on or after this date
+</ParamField>
+
+<ParamField path="since_id" type="str | None" default="None">
+  Return mentions since this mention ID
+</ParamField>
+
+<ParamField path="source" type="str | None" default="None">
+  Filter by source type (e.g., "twitter", "web")
+</ParamField>
+
+<ParamField path="read" type="bool | None" default="None">
+  Filter by read status
+</ParamField>
+
+<ParamField path="favorite" type="bool | None" default="None">
+  Filter by favorite status
+</ParamField>
+
+<ParamField path="tone" type="str | None" default="None">
+  Filter by tone (positive, negative, neutral)
+</ParamField>
+
+<ParamField path="cursor" type="str | None" default="None">
+  Pagination cursor
+</ParamField>
+
+### Returns
+
+<ResponseField name="response" type="MentionsResponse">
+  [MentionsResponse](/api/models/mention-models) containing list of mentions
+</ResponseField>
+
+## iter_mentions
+
+Iterate over all mentions with automatic pagination.
+
+```python
+for mention in client.iter_mentions("account-id", "alert-id", limit=100):
+    print(f"Processing: {mention.title}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="limit" type="int" default="100">
+  Number of mentions per page
+</ParamField>
+
+<ParamField path="**kwargs" type="Any">
+  Additional filters (see get_mentions)
+</ParamField>
+
+### Yields
+
+<ResponseField name="mention" type="Mention">
+  [Mention](/api/models/mention-models) objects
+</ResponseField>
+
+## get_mention
+
+Fetch a single mention by ID.
+
+```python
+mention = client.get_mention("account-id", "alert-id", "mention-id")
+print(f"Title: {mention.title}")
+print(f"Author: {mention.author_name}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="mention" type="Mention">
+  [Mention](/api/models/mention-models) object
+</ResponseField>
+
+## curate_mention
+
+Update/curate a mention (mark as read, favorite, set tone, etc.).
+
+```python
+from mention import CurateMentionRequest
+
+request = CurateMentionRequest(
+    read=True,
+    favorite=True,
+    tone="positive"
+)
+mention = client.curate_mention("account-id", "alert-id", "mention-id", request)
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+<ParamField path="request" type="CurateMentionRequest" required>
+  Curation request with updates
+</ParamField>
+
+### Returns
+
+<ResponseField name="mention" type="Mention">
+  Updated [Mention](/api/models/mention-models) object
+</ResponseField>
+
+## mark_all_mentions_read
+
+Mark all mentions for an alert as read.
+
+```python
+success = client.mark_all_mentions_read("account-id", "alert-id")
+if success:
+    print("All mentions marked as read")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="success" type="bool">
+  True if successful
+</ResponseField>
+
+## get_mention_children
+
+Fetch child mentions (replies, comments) of a mention.
+
+```python
+response = client.get_mention_children("account-id", "alert-id", "mention-id")
+for child in response.mentions:
+    print(f"Reply: {child.title}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="mention_id" type="str" required>
+  The mention ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="response" type="MentionsResponse">
+  [MentionsResponse](/api/models/mention-models) containing child mentions
+</ResponseField>
+
+## stream_mentions
+
+Stream mentions in real-time using long-polling.
+
+```python
+from datetime import datetime
+
+for mention in client.stream_mentions("account-id", "alert-id", since=datetime.now()):
+    print(f"New mention: {mention.title}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="since" type="datetime | str | None" default="None">
+  Start streaming from this timestamp
+</ParamField>
+
+### Yields
+
+<ResponseField name="mention" type="Mention">
+  [Mention](/api/models/mention-models) objects as they arrive
+</ResponseField>

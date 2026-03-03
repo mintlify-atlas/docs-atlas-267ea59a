@@ -1,0 +1,129 @@
+---
+title: "Stats"
+description: "Statistics resource methods for retrieving analytics data"
+---
+
+The Stats resource provides methods for retrieving statistical data and analytics for accounts and alerts.
+
+## get_stats
+
+Fetch statistics for an account or alert.
+
+```python
+from mention import StatsPeriod
+from datetime import datetime, timedelta
+
+# Get alert statistics for the last 30 days
+stats = client.get_stats(
+    account_id="account-id",
+    alert_id="alert-id",
+    from_date=datetime.now() - timedelta(days=30),
+    to_date=datetime.now(),
+    period=StatsPeriod.DAY
+)
+print(f"Total mentions: {stats.total_mentions}")
+print(f"Average sentiment: {stats.average_sentiment}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str | None" default="None">
+  The alert ID (optional, if None gets account-level stats)
+</ParamField>
+
+<ParamField path="from_date" type="datetime | str | None" default="None">
+  Start date for statistics period
+</ParamField>
+
+<ParamField path="to_date" type="datetime | str | None" default="None">
+  End date for statistics period
+</ParamField>
+
+<ParamField path="period" type="StatsPeriod" default="StatsPeriod.DAY">
+  Time grouping period (hour, day, week, month)
+</ParamField>
+
+### Returns
+
+<ResponseField name="response" type="StatsResponse">
+  [StatsResponse](/api/models/task-models) containing statistics data
+</ResponseField>
+
+## Examples
+
+### Account-Level Statistics
+
+Get aggregated statistics for all alerts in an account:
+
+```python
+from mention import MentionClient, StatsPeriod
+from datetime import datetime, timedelta
+
+client = MentionClient(access_token="your-token")
+
+# Get account stats (no alert_id specified)
+stats = client.get_stats(
+    account_id="account-123",
+    from_date=datetime.now() - timedelta(days=7),
+    to_date=datetime.now(),
+    period=StatsPeriod.DAY
+)
+
+print(f"Total mentions across all alerts: {stats.total_mentions}")
+```
+
+### Alert-Level Statistics
+
+Get detailed statistics for a specific alert:
+
+```python
+from mention import StatsPeriod
+
+# Get alert-specific stats
+stats = client.get_stats(
+    account_id="account-123",
+    alert_id="alert-456",
+    from_date="2024-01-01T00:00:00Z",
+    to_date="2024-01-31T23:59:59Z",
+    period=StatsPeriod.WEEK
+)
+
+# Access time-series data
+for data_point in stats.data:
+    print(f"Week of {data_point.date}: {data_point.mentions} mentions")
+```
+
+### Hourly Statistics
+
+Get high-resolution statistics by hour:
+
+```python
+from mention import StatsPeriod
+from datetime import datetime, timedelta
+
+# Get hourly stats for last 24 hours
+stats = client.get_stats(
+    account_id="account-123",
+    alert_id="alert-456",
+    from_date=datetime.now() - timedelta(hours=24),
+    to_date=datetime.now(),
+    period=StatsPeriod.HOUR
+)
+
+print(f"Hourly breakdown for last 24 hours:")
+for hour in stats.data:
+    print(f"  {hour.date}: {hour.mentions} mentions")
+```
+
+## StatsPeriod Values
+
+The `period` parameter accepts the following values from the `StatsPeriod` enum:
+
+- `StatsPeriod.HOUR` - Group data by hour
+- `StatsPeriod.DAY` - Group data by day (default)
+- `StatsPeriod.WEEK` - Group data by week
+- `StatsPeriod.MONTH` - Group data by month

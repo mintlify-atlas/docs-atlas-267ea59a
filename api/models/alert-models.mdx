@@ -1,0 +1,362 @@
+---
+title: Alert Models
+description: Pydantic models for working with alerts in the Mention Python SDK
+---
+
+## Alert
+
+Represents a Mention alert. Inherits from `TimestampMixin` and `MentionBaseModel`.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the alert
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Name of the alert
+</ResponseField>
+
+<ResponseField name="query" type="AlertQuery" required>
+  Query configuration for the alert
+</ResponseField>
+
+<ResponseField name="languages" type="list[string]" default="[]">
+  List of language codes to monitor (e.g., "en", "fr")
+</ResponseField>
+
+<ResponseField name="countries" type="list[string]" default="[]">
+  List of country codes to monitor
+</ResponseField>
+
+<ResponseField name="sources" type="list[string]" default="[]">
+  List of sources to monitor (e.g., "web", "twitter", "facebook")
+</ResponseField>
+
+<ResponseField name="noise_detection" type="boolean" default="true">
+  Whether noise detection is enabled for this alert
+</ResponseField>
+
+<ResponseField name="sentiment_analysis" type="boolean" default="true">
+  Whether sentiment analysis is enabled for this alert
+</ResponseField>
+
+<ResponseField name="mentions_count" type="integer" default="0">
+  Total number of mentions for this alert
+</ResponseField>
+
+<ResponseField name="unread_mentions_count" type="integer" default="0">
+  Number of unread mentions for this alert
+</ResponseField>
+
+<ResponseField name="shares_count" type="integer" default="0">
+  Number of times this alert has been shared
+</ResponseField>
+
+<ResponseField name="followers_count" type="integer" default="0">
+  Number of followers across all mentions
+</ResponseField>
+
+<ResponseField name="reach" type="integer" default="0">
+  Total reach across all mentions
+</ResponseField>
+
+<ResponseField name="last_mention_at" type="datetime | None">
+  Timestamp of the most recent mention
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime | None">
+  Timestamp when the alert was created
+</ResponseField>
+
+<ResponseField name="updated_at" type="datetime | None">
+  Timestamp when the alert was last updated
+</ResponseField>
+
+```python
+from mention import Alert
+
+alert = client.get_alert(alert_id="123456", account_id="account-id")
+print(f"Alert: {alert.name}")
+print(f"Mentions: {alert.mentions_count}")
+print(f"Languages: {alert.languages}")
+print(f"Sources: {alert.sources}")
+```
+
+---
+
+## AlertsResponse
+
+Response model containing a list of alerts with pagination support. Inherits from `PaginatedResponse[Alert]`.
+
+<ResponseField name="alerts" type="list[Alert]" default="[]">
+  List of Alert objects
+</ResponseField>
+
+<ResponseField name="links" type="PaginationLinks | None">
+  Pagination links for navigating through pages
+</ResponseField>
+
+<ResponseField name="total" type="integer | None">
+  Total number of alerts available
+</ResponseField>
+
+<ResponseField name="page" type="integer | None">
+  Current page number
+</ResponseField>
+
+<ResponseField name="per_page" type="integer | None">
+  Number of items per page
+</ResponseField>
+
+```python
+from mention import AlertsResponse
+
+response = client.get_alerts(account_id="account-id")
+for alert in response.alerts:
+    print(f"{alert.name}: {alert.mentions_count} mentions")
+
+if response.has_more:
+    print("More alerts available")
+```
+
+---
+
+## AlertQuery
+
+Alert query configuration that defines what to monitor. Inherits from `MentionBaseModel`.
+
+<ResponseField name="type" type="QueryType" default="QueryType.BASIC">
+  Type of query: `"basic"`, `"advanced"`, or `"boolean"`
+</ResponseField>
+
+<ResponseField name="included_keywords" type="list[string]" default="[]">
+  Keywords that should be included in mentions
+</ResponseField>
+
+<ResponseField name="excluded_keywords" type="list[string]" default="[]">
+  Keywords that should be excluded from mentions
+</ResponseField>
+
+<ResponseField name="required_keywords" type="list[string]" default="[]">
+  Keywords that must be present in mentions
+</ResponseField>
+
+<ResponseField name="should_belong_to_owner" type="boolean | None">
+  Whether mentions should belong to the alert owner
+</ResponseField>
+
+```python
+from mention import AlertQuery, CreateAlertRequest
+
+query = AlertQuery(
+    type="basic",
+    included_keywords=["python", "api"],
+    excluded_keywords=["java", "javascript"]
+)
+
+request = CreateAlertRequest(
+    name="Python API Mentions",
+    query=query,
+    languages=["en"],
+    sources=["web", "twitter"]
+)
+```
+
+---
+
+## CreateAlertRequest
+
+Request body for creating a new alert. Inherits from `MentionBaseModel`.
+
+<ResponseField name="name" type="string" required>
+  Name of the alert (cannot be empty)
+</ResponseField>
+
+<ResponseField name="query" type="AlertQuery" required>
+  Query configuration for the alert
+</ResponseField>
+
+<ResponseField name="languages" type="list[string]" default="['en']">
+  List of language codes to monitor
+</ResponseField>
+
+<ResponseField name="countries" type="list[string]" default="[]">
+  List of country codes to monitor
+</ResponseField>
+
+<ResponseField name="sources" type="list[string]" default="['web']">
+  List of sources to monitor
+</ResponseField>
+
+<ResponseField name="noise_detection" type="boolean" default="true">
+  Enable noise detection for the alert
+</ResponseField>
+
+<ResponseField name="sentiment_analysis" type="boolean" default="true">
+  Enable sentiment analysis for the alert
+</ResponseField>
+
+```python
+from mention import CreateAlertRequest, AlertQuery
+
+request = CreateAlertRequest(
+    name="Brand Monitoring",
+    query=AlertQuery(
+        type="basic",
+        included_keywords=["MyBrand", "MyProduct"]
+    ),
+    languages=["en", "fr"],
+    sources=["web", "twitter", "news"],
+    sentiment_analysis=True
+)
+
+alert = client.create_alert(account_id="account-id", request=request)
+```
+
+---
+
+## UpdateAlertRequest
+
+Request body for updating an existing alert. All fields are optional. Inherits from `MentionBaseModel`.
+
+<ResponseField name="name" type="string | None">
+  Updated name of the alert
+</ResponseField>
+
+<ResponseField name="query" type="AlertQuery | None">
+  Updated query configuration
+</ResponseField>
+
+<ResponseField name="languages" type="list[string] | None">
+  Updated list of language codes
+</ResponseField>
+
+<ResponseField name="countries" type="list[string] | None">
+  Updated list of country codes
+</ResponseField>
+
+<ResponseField name="sources" type="list[string] | None">
+  Updated list of sources
+</ResponseField>
+
+<ResponseField name="noise_detection" type="boolean | None">
+  Update noise detection setting
+</ResponseField>
+
+<ResponseField name="sentiment_analysis" type="boolean | None">
+  Update sentiment analysis setting
+</ResponseField>
+
+```python
+from mention import UpdateAlertRequest
+
+request = UpdateAlertRequest(
+    name="Updated Alert Name",
+    languages=["en", "es", "fr"]
+)
+
+alert = client.update_alert(
+    alert_id="123456",
+    account_id="account-id",
+    request=request
+)
+```
+
+---
+
+## AlertPreferences
+
+Represents alert preferences and notification settings. Inherits from `MentionBaseModel`.
+
+<ResponseField name="alert_id" type="string" required>
+  ID of the alert these preferences apply to
+</ResponseField>
+
+<ResponseField name="account_id" type="string | None">
+  ID of the account
+</ResponseField>
+
+<ResponseField name="email_notifications" type="boolean" default="true">
+  Enable email notifications for new mentions
+</ResponseField>
+
+<ResponseField name="push_notifications" type="boolean" default="false">
+  Enable push notifications for new mentions
+</ResponseField>
+
+<ResponseField name="daily_digest" type="boolean" default="false">
+  Enable daily digest emails
+</ResponseField>
+
+<ResponseField name="weekly_digest" type="boolean" default="false">
+  Enable weekly digest emails
+</ResponseField>
+
+<ResponseField name="mention_limit" type="integer | None">
+  Maximum number of mentions to receive notifications for
+</ResponseField>
+
+<ResponseField name="notification_channels" type="list[NotificationChannel]" default="[]">
+  List of notification channels: `"email"`, `"push"`, `"slack"`, `"webhook"`
+</ResponseField>
+
+<ResponseField name="language" type="string | None">
+  Preferred language for notifications
+</ResponseField>
+
+<ResponseField name="timezone" type="string | None">
+  Timezone for notifications
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime | None">
+  Timestamp when preferences were created
+</ResponseField>
+
+<ResponseField name="updated_at" type="datetime | None">
+  Timestamp when preferences were last updated
+</ResponseField>
+
+```python
+from mention import AlertPreferences
+
+prefs = client.get_alert_preferences(
+    alert_id="123456",
+    account_id="account-id"
+)
+
+print(f"Email notifications: {prefs.email_notifications}")
+print(f"Daily digest: {prefs.daily_digest}")
+print(f"Channels: {prefs.notification_channels}")
+```
+
+---
+
+## Enums
+
+### QueryType
+
+Alert query type enumeration:
+- `BASIC` = `"basic"` - Simple keyword-based queries
+- `ADVANCED` = `"advanced"` - Advanced query syntax
+- `BOOLEAN` = `"boolean"` - Boolean logic queries
+
+### AlertSource
+
+Available alert sources:
+- `WEB` = `"web"`
+- `TWITTER` = `"twitter"`
+- `FACEBOOK` = `"facebook"`
+- `INSTAGRAM` = `"instagram"`
+- `YOUTUBE` = `"youtube"`
+- `REDDIT` = `"reddit"`
+- `NEWS` = `"news"`
+- `BLOG` = `"blog"`
+- `FORUM` = `"forum"`
+- `REVIEW` = `"review"`
+
+### NotificationChannel
+
+Notification channel types:
+- `EMAIL` = `"email"`
+- `PUSH` = `"push"`
+- `SLACK` = `"slack"`
+- `WEBHOOK` = `"webhook"`

@@ -1,0 +1,332 @@
+---
+title: Mention Models
+description: Pydantic models for working with mentions in the Mention Python SDK
+---
+
+## Mention
+
+Represents a single mention from the Mention API. Inherits from `TimestampMixin` and `MentionBaseModel`.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the mention
+</ResponseField>
+
+<ResponseField name="title" type="string | None">
+  Title of the mention
+</ResponseField>
+
+<ResponseField name="description" type="string | None">
+  Full description or content of the mention
+</ResponseField>
+
+<ResponseField name="description_short" type="string | None">
+  Shortened version of the description
+</ResponseField>
+
+<ResponseField name="original_url" type="string | None">
+  Original URL where the mention was found
+</ResponseField>
+
+<ResponseField name="source_name" type="string | None">
+  Name of the source (e.g., "Twitter", "Reddit")
+</ResponseField>
+
+<ResponseField name="source_type" type="string | None">
+  Type of source (e.g., "social", "news", "blog")
+</ResponseField>
+
+<ResponseField name="tone" type="Tone | None">
+  Sentiment/tone of the mention: `"positive"`, `"negative"`, or `"neutral"`
+</ResponseField>
+
+<ResponseField name="author" type="Author | None">
+  Author information for the mention
+</ResponseField>
+
+<ResponseField name="tags" type="list[Tag]" default="[]">
+  List of tags associated with this mention
+</ResponseField>
+
+<ResponseField name="favorite" type="boolean" default="false">
+  Whether the mention is marked as favorite
+</ResponseField>
+
+<ResponseField name="read" type="boolean" default="false">
+  Whether the mention has been read
+</ResponseField>
+
+<ResponseField name="trashed" type="boolean" default="false">
+  Whether the mention has been trashed
+</ResponseField>
+
+<ResponseField name="published_at" type="datetime | None">
+  Timestamp when the mention was published
+</ResponseField>
+
+<ResponseField name="reach" type="integer | None">
+  Estimated reach of the mention
+</ResponseField>
+
+<ResponseField name="engagement" type="dict[string, integer] | None">
+  Engagement metrics (likes, shares, comments, etc.)
+</ResponseField>
+
+<ResponseField name="language" type="string | None">
+  Language code of the mention
+</ResponseField>
+
+<ResponseField name="country" type="string | None">
+  Country code where the mention originated
+</ResponseField>
+
+<ResponseField name="image_url" type="string | None">
+  URL of the associated image
+</ResponseField>
+
+<ResponseField name="video_url" type="string | None">
+  URL of the associated video
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime | None">
+  Timestamp when the mention was created in the system
+</ResponseField>
+
+<ResponseField name="updated_at" type="datetime | None">
+  Timestamp when the mention was last updated
+</ResponseField>
+
+```python
+from mention import Mention
+
+mentions = client.get_mentions(
+    alert_id="123456",
+    account_id="account-id"
+)
+
+for mention in mentions.mentions:
+    print(f"Title: {mention.title}")
+    print(f"Source: {mention.source_name}")
+    print(f"Tone: {mention.tone}")
+    print(f"URL: {mention.original_url}")
+    if mention.author:
+        print(f"Author: {mention.author.name}")
+```
+
+---
+
+## MentionsResponse
+
+Response model containing a list of mentions with pagination support. Inherits from `PaginatedResponse[Mention]`.
+
+<ResponseField name="mentions" type="list[Mention]" default="[]">
+  List of Mention objects
+</ResponseField>
+
+<ResponseField name="links" type="PaginationLinks | None">
+  Pagination links for navigating through pages
+</ResponseField>
+
+<ResponseField name="total" type="integer | None">
+  Total number of mentions available
+</ResponseField>
+
+<ResponseField name="page" type="integer | None">
+  Current page number
+</ResponseField>
+
+<ResponseField name="per_page" type="integer | None">
+  Number of items per page
+</ResponseField>
+
+```python
+from mention import MentionsResponse
+
+response = client.get_mentions(
+    alert_id="123456",
+    account_id="account-id",
+    limit=20
+)
+
+print(f"Found {len(response.mentions)} mentions")
+for mention in response.mentions:
+    print(f"- {mention.title} ({mention.tone})")
+
+if response.has_more:
+    print("More mentions available on next page")
+```
+
+---
+
+## Author
+
+Represents the author of a mention. Inherits from `MentionBaseModel`.
+
+<ResponseField name="id" type="string | None">
+  Unique identifier for the author
+</ResponseField>
+
+<ResponseField name="name" type="string | None">
+  Display name of the author
+</ResponseField>
+
+<ResponseField name="username" type="string | None">
+  Username or handle of the author
+</ResponseField>
+
+<ResponseField name="profile_url" type="string | None">
+  URL to the author's profile
+</ResponseField>
+
+<ResponseField name="avatar_url" type="string | None">
+  URL to the author's avatar image
+</ResponseField>
+
+<ResponseField name="followers_count" type="integer | None">
+  Number of followers the author has
+</ResponseField>
+
+<ResponseField name="following_count" type="integer | None">
+  Number of accounts the author follows
+</ResponseField>
+
+<ResponseField name="influence_score" type="float | None">
+  Influence score of the author
+</ResponseField>
+
+```python
+from mention import Author
+
+mention = client.get_mention(
+    mention_id="123456",
+    alert_id="alert-id",
+    account_id="account-id"
+)
+
+if mention.author:
+    author = mention.author
+    print(f"Author: {author.name} (@{author.username})")
+    print(f"Followers: {author.followers_count}")
+    print(f"Influence: {author.influence_score}")
+    print(f"Profile: {author.profile_url}")
+```
+
+---
+
+## CurateMentionRequest
+
+Request body for curating (updating) a mention. All fields are optional. Inherits from `MentionBaseModel`.
+
+<ResponseField name="favorite" type="boolean | None">
+  Mark the mention as favorite or unfavorite
+</ResponseField>
+
+<ResponseField name="read" type="boolean | None">
+  Mark the mention as read or unread
+</ResponseField>
+
+<ResponseField name="trashed" type="boolean | None">
+  Move the mention to trash or restore it
+</ResponseField>
+
+<ResponseField name="tone" type="Tone | None">
+  Override the sentiment: `"positive"`, `"negative"`, or `"neutral"`
+</ResponseField>
+
+<ResponseField name="tags" type="list[string] | None">
+  List of tag IDs to associate with the mention
+</ResponseField>
+
+<ResponseField name="folder" type="string | None">
+  Folder to move the mention to
+</ResponseField>
+
+```python
+from mention import CurateMentionRequest
+
+# Mark as favorite and read
+request = CurateMentionRequest(
+    favorite=True,
+    read=True
+)
+
+client.curate_mention(
+    mention_id="123456",
+    alert_id="alert-id",
+    account_id="account-id",
+    request=request
+)
+
+# Update tone and add tags
+request = CurateMentionRequest(
+    tone="positive",
+    tags=["tag-id-1", "tag-id-2"]
+)
+
+client.curate_mention(
+    mention_id="123456",
+    alert_id="alert-id",
+    account_id="account-id",
+    request=request
+)
+```
+
+---
+
+## Tag
+
+Represents a tag associated with a mention. Inherits from `MentionBaseModel`.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the tag
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Name of the tag
+</ResponseField>
+
+<ResponseField name="color" type="string | None">
+  Color code for the tag (e.g., "#FF5733")
+</ResponseField>
+
+```python
+from mention import Tag
+
+mention = client.get_mention(
+    mention_id="123456",
+    alert_id="alert-id",
+    account_id="account-id"
+)
+
+for tag in mention.tags:
+    print(f"Tag: {tag.name} ({tag.color})")
+```
+
+---
+
+## Enums
+
+### Tone
+
+Mention sentiment/tone enumeration:
+- `POSITIVE` = `"positive"` - Positive sentiment
+- `NEGATIVE` = `"negative"` - Negative sentiment
+- `NEUTRAL` = `"neutral"` - Neutral sentiment
+
+The tone field supports automatic parsing from string or integer values:
+- String: `"positive"`, `"negative"`, `"neutral"`
+- Integer: `1` (positive), `0` (neutral), `-1` (negative)
+
+```python
+from mention import Tone, CurateMentionRequest
+
+# Filter mentions by tone
+response = client.get_mentions(
+    alert_id="123456",
+    account_id="account-id",
+    tone="positive"
+)
+
+for mention in response.mentions:
+    if mention.tone == Tone.POSITIVE:
+        print(f"Positive mention: {mention.title}")
+```

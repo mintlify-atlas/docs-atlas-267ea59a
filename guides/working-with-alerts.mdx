@@ -1,0 +1,307 @@
+---
+title: "Working with Alerts"
+description: "Learn how to create, manage, and monitor alerts using the Mention Python SDK"
+---
+
+## Overview
+
+Alerts are the foundation of the Mention API. They define what keywords and topics you want to monitor across various sources and languages. This guide covers all alert operations including creating, updating, listing, and managing alert states.
+
+## Listing Alerts
+
+Retrieve all alerts for an account using the `get_alerts()` method:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Get all alerts for an account
+response = client.get_alerts(account_id="your-account-id")
+
+print(f"Total alerts: {len(response.alerts)}")
+for alert in response.alerts:
+    print(f"- {alert.name} ({alert.id})")
+    print(f"  Mentions: {alert.mentions_count}")
+    print(f"  Unread: {alert.unread_mentions_count}")
+```
+
+## Getting a Single Alert
+
+Fetch detailed information about a specific alert:
+
+```python
+alert = client.get_alert(
+    account_id="your-account-id",
+    alert_id="alert-123"
+)
+
+print(f"Alert: {alert.name}")
+print(f"Query: {alert.query.included_keywords}")
+print(f"Languages: {alert.languages}")
+print(f"Sources: {alert.sources}")
+print(f"Last mention: {alert.last_mention_at}")
+```
+
+## Creating Alerts
+
+Create a new alert by defining the query, languages, and sources to monitor.
+
+<Steps>
+
+<Step title="Import the required models">
+```python
+from mention import MentionClient
+from mention.models import CreateAlertRequest, AlertQuery, QueryType
+```
+</Step>
+
+<Step title="Build the alert request">
+```python
+# Create a basic keyword alert
+request = CreateAlertRequest(
+    name="Python API Monitoring",
+    query=AlertQuery(
+        type=QueryType.BASIC,
+        included_keywords=["python api", "python sdk"],
+        excluded_keywords=["job", "hiring"]
+    ),
+    languages=["en", "fr"],
+    sources=["web", "twitter", "reddit"],
+    noise_detection=True,
+    sentiment_analysis=True
+)
+```
+</Step>
+
+<Step title="Create the alert">
+```python
+alert = client.create_alert(
+    account_id="your-account-id",
+    request=request
+)
+
+print(f"Created alert: {alert.id}")
+print(f"Alert name: {alert.name}")
+```
+</Step>
+
+</Steps>
+
+### Query Types
+
+The SDK supports three query types:
+
+<Tabs>
+  <Tab title="BASIC">
+    Simple keyword matching with included and excluded terms:
+
+    ```python
+    query = AlertQuery(
+        type=QueryType.BASIC,
+        included_keywords=["mention api", "brand monitoring"],
+        excluded_keywords=["spam", "unrelated"]
+    )
+    ```
+  </Tab>
+  
+  <Tab title="ADVANCED">
+    More sophisticated matching with required keywords:
+
+    ```python
+    query = AlertQuery(
+        type=QueryType.ADVANCED,
+        included_keywords=["product"],
+        required_keywords=["review"],
+        excluded_keywords=["fake"]
+    )
+    ```
+  </Tab>
+  
+  <Tab title="BOOLEAN">
+    Boolean search expressions:
+
+    ```python
+    query = AlertQuery(
+        type=QueryType.BOOLEAN,
+        included_keywords=["(python OR django) AND api"]
+    )
+    ```
+  </Tab>
+</Tabs>
+
+## Updating Alerts
+
+Modify an existing alert's configuration:
+
+```python
+from mention.models import UpdateAlertRequest, AlertQuery, QueryType
+
+# Update alert name and add more keywords
+update_request = UpdateAlertRequest(
+    name="Python & Django API Monitoring",
+    query=AlertQuery(
+        type=QueryType.BASIC,
+        included_keywords=["python api", "django api", "fastapi"],
+        excluded_keywords=["job", "hiring", "course"]
+    ),
+    languages=["en", "fr", "es"]
+)
+
+updated_alert = client.update_alert(
+    account_id="your-account-id",
+    alert_id="alert-123",
+    request=update_request
+)
+
+print(f"Updated: {updated_alert.name}")
+```
+
+## Pausing and Resuming Alerts
+
+Control alert monitoring without deleting the alert:
+
+<CodeGroup>
+
+```python Pause Alert
+# Temporarily stop monitoring
+client.pause_alert(
+    account_id="your-account-id",
+    alert_id="alert-123"
+)
+
+print("Alert paused - monitoring stopped")
+```
+
+```python Resume Alert
+# Resume monitoring
+client.unpause_alert(
+    account_id="your-account-id",
+    alert_id="alert-123"
+)
+
+print("Alert resumed - monitoring active")
+```
+
+</CodeGroup>
+
+## Deleting Alerts
+
+Permanently remove an alert:
+
+```python
+result = client.delete_alert(
+    account_id="your-account-id",
+    alert_id="alert-123"
+)
+
+if result:
+    print("Alert deleted successfully")
+```
+
+<Warning>
+Deleting an alert is permanent and cannot be undone. All associated mentions will also be removed.
+</Warning>
+
+## Alert Sources
+
+Available sources you can monitor:
+
+| Source | Description |
+|--------|-------------|
+| `web` | General web pages |
+| `twitter` | Twitter/X posts |
+| `facebook` | Facebook posts |
+| `instagram` | Instagram posts |
+| `youtube` | YouTube videos |
+| `reddit` | Reddit discussions |
+| `news` | News articles |
+| `blog` | Blog posts |
+| `forum` | Forum discussions |
+| `review` | Review sites |
+
+## Complete Example
+
+Here's a complete workflow for managing alerts:
+
+```python
+from mention import MentionClient
+from mention.models import CreateAlertRequest, UpdateAlertRequest, AlertQuery, QueryType
+
+# Initialize client
+client = MentionClient(access_token="your-token")
+account_id = "your-account-id"
+
+# Create a new alert
+request = CreateAlertRequest(
+    name="Brand Monitoring",
+    query=AlertQuery(
+        type=QueryType.BASIC,
+        included_keywords=["mycompany", "our product"],
+        excluded_keywords=["competitor"]
+    ),
+    languages=["en"],
+    sources=["twitter", "reddit", "news"],
+    sentiment_analysis=True
+)
+
+alert = client.create_alert(account_id, request)
+print(f"Created alert: {alert.id}")
+
+# Get alert details
+alert_info = client.get_alert(account_id, alert.id)
+print(f"Monitoring {len(alert_info.query.included_keywords)} keywords")
+
+# Update the alert
+update = UpdateAlertRequest(
+    name="Enhanced Brand Monitoring",
+    sources=["twitter", "reddit", "news", "blog"]
+)
+client.update_alert(account_id, alert.id, update)
+
+# Pause monitoring temporarily
+client.pause_alert(account_id, alert.id)
+print("Alert paused for maintenance")
+
+# Resume monitoring
+client.unpause_alert(account_id, alert.id)
+print("Alert resumed")
+
+# Clean up
+client.delete_alert(account_id, alert.id)
+print("Alert deleted")
+
+client.close()
+```
+
+## Error Handling
+
+Handle common errors when working with alerts:
+
+```python
+from mention.exceptions import (
+    MentionNotFoundError,
+    MentionAuthError,
+    MentionAPIError
+)
+
+try:
+    alert = client.get_alert(account_id, "invalid-id")
+except MentionNotFoundError:
+    print("Alert not found")
+except MentionAuthError:
+    print("Authentication failed")
+except MentionAPIError as e:
+    print(f"API error: {e}")
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Managing Mentions" icon="list" href="/guides/managing-mentions">
+    Learn how to retrieve and manage mentions from your alerts
+  </Card>
+  <Card title="Async Usage" icon="bolt" href="/guides/async-usage">
+    Use async/await patterns for better performance
+  </Card>
+</CardGroup>

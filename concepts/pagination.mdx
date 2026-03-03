@@ -1,0 +1,335 @@
+---
+title: Pagination
+description: Learn how to paginate through large result sets using cursors and iterators
+---
+
+The Mention API uses cursor-based pagination for endpoints that return large collections of data. The SDK provides both manual and automatic pagination methods.
+
+## Automatic pagination with iter_mentions()
+
+The easiest way to iterate through all mentions is using the `iter_mentions()` method, which handles pagination automatically:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Automatically iterate through all mentions
+for mention in client.iter_mentions(
+    account_id="123",
+    alert_id="456",
+    limit=100  # Fetch 100 mentions per page
+):
+    print(f"{mention.id}: {mention.title}")
+```
+
+The `iter_mentions()` method:
+- Yields mentions one at a time
+- Automatically fetches the next page when needed
+- Handles cursor extraction from API responses
+- Stops when `has_more` is `False` or no more data is available
+
+### With filters
+
+You can combine automatic pagination with any filter supported by `get_mentions()`:
+
+```python
+from datetime import datetime
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Iterate through unread mentions from Twitter
+for mention in client.iter_mentions(
+    account_id="123",
+    alert_id="456",
+    limit=50,
+    source="twitter",
+    read=False,
+    before_date=datetime(2024, 1, 1)
+):
+    print(f"Unread tweet: {mention.title}")
+```
+
+## Manual pagination with get_mentions()
+
+For more control over pagination, use the `get_mentions()` method directly:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Fetch first page
+response = client.get_mentions(
+    account_id="123",
+    alert_id="456",
+    limit=100
+)
+
+print(f"Found {len(response.mentions)} mentions")
+print(f"Has more: {response.has_more}")
+
+for mention in response.mentions:
+    print(f"{mention.id}: {mention.title}")
+```
+
+### Response structure
+
+The `get_mentions()` method returns a `MentionsResponse` object with:
+
+- `mentions` (list[Mention]): List of mention objects
+- `has_more` (bool): Whether more results are available
+- `links` (object | None): Contains pagination links
+  - `more` (str | None): Cursor for the next page
+
+### Fetching subsequent pages
+
+Use the cursor from `links.more` to fetch the next page:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Fetch first page
+response = client.get_mentions(
+    account_id="123",
+    alert_id="456",
+    limit=100
+)
+
+# Process first page
+for mention in response.mentions:
+    print(mention.id)
+
+# Fetch next page using cursor
+if response.has_more and response.links and response.links.more:
+    response = client.get_mentions(
+        account_id="123",
+        alert_id="456",
+        limit=100,
+        cursor=response.links.more
+    )
+    # Process second page
+    for mention in response.mentions:
+        print(mention.id)
+```
+
+## Pagination loop pattern
+
+For manual pagination, use a while loop to fetch all pages:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+cursor = None
+all_mentions = []
+
+while True:
+    response = client.get_mentions(
+        account_id="123",
+        alert_id="456",
+        limit=100,
+        cursor=cursor
+    )
+    
+    # Add mentions from this page
+    all_mentions.extend(response.mentions)
+    
+    # Check if there are more pages
+    if not response.has_more or not response.links or not response.links.more:
+        break
+    
+    # Update cursor for next page
+    cursor = response.links.more
+
+print(f"Total mentions: {len(all_mentions)}")
+```
+
+## Controlling page size
+
+Use the `limit` parameter to control how many results are returned per page:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Fetch 50 mentions per page
+response = client.get_mentions(
+    account_id="123",
+    alert_id="456",
+    limit=50
+)
+```
+
+**Limits:**
+- Default: `100`
+- Maximum: `1000`
+- The SDK automatically caps the limit at 1000 if you provide a larger value
+
+<Note>
+Smaller page sizes mean more API requests but lower memory usage. Larger page sizes reduce API requests but increase memory usage.
+</Note>
+
+## Async pagination
+
+Async pagination is currently not available via an iterator. Use manual pagination with `AsyncMentionClient`:
+
+```python
+import asyncio
+from mention import AsyncMentionClient
+
+async def fetch_all_mentions():
+    async with AsyncMentionClient(access_token="your-token") as client:
+        cursor = None
+        all_mentions = []
+        
+        while True:
+            response = await client.get_mentions(
+                account_id="123",
+                alert_id="456",
+                limit=100,
+                cursor=cursor
+            )
+            
+            all_mentions.extend(response.mentions)
+            
+            if not response.has_more or not response.links or not response.links.more:
+                break
+            
+            cursor = response.links.more
+        
+        return all_mentions
+
+mentions = asyncio.run(fetch_all_mentions())
+print(f"Total mentions: {len(mentions)}")
+```
+
+## Pagination with filters
+
+All filter parameters work with pagination:
+
+```python
+from datetime import datetime
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+cursor = None
+while True:
+    response = client.get_mentions(
+        account_id="123",
+        alert_id="456",
+        limit=100,
+        cursor=cursor,
+        # Filters
+        source="twitter",
+        tone="positive",
+        read=False,
+        before_date=datetime(2024, 3, 1),
+        not_before_date=datetime(2024, 1, 1)
+    )
+    
+    for mention in response.mentions:
+        print(f"Positive tweet: {mention.title}")
+    
+    if not response.has_more or not response.links or not response.links.more:
+        break
+    
+    cursor = response.links.more
+```
+
+## Available filter parameters
+
+The following parameters can be used with both `get_mentions()` and `iter_mentions()`:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `limit` | `int` | Number of mentions per page (max 1000) |
+| `cursor` | `str` | Pagination cursor from previous response |
+| `before_date` | `datetime \| str` | Return mentions before this date |
+| `not_before_date` | `datetime \| str` | Return mentions on or after this date |
+| `since_id` | `str` | Return mentions since this mention ID |
+| `source` | `str` | Filter by source type (e.g., "twitter", "web") |
+| `read` | `bool` | Filter by read status |
+| `favorite` | `bool` | Filter by favorite status |
+| `tone` | `str` | Filter by tone ("positive", "negative", "neutral") |
+
+## Best practices
+
+1. **Use iter_mentions() for simplicity**: It's the easiest way to process all mentions
+2. **Choose appropriate page sizes**: Balance between API requests and memory usage
+3. **Handle has_more correctly**: Always check both `has_more` and `links.more` before requesting next page
+4. **Process results incrementally**: Don't load all results into memory if you can process them one at a time
+5. **Use filters to reduce data**: Apply filters to fetch only the mentions you need
+
+## Common patterns
+
+### Count all mentions
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+count = sum(
+    1 for _ in client.iter_mentions(
+        account_id="123",
+        alert_id="456",
+        limit=1000  # Use large pages for counting
+    )
+)
+print(f"Total mentions: {count}")
+```
+
+### Batch processing
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+def process_batch(mentions):
+    # Process a batch of mentions
+    for mention in mentions:
+        print(f"Processing: {mention.id}")
+
+cursor = None
+while True:
+    response = client.get_mentions(
+        account_id="123",
+        alert_id="456",
+        limit=100,
+        cursor=cursor
+    )
+    
+    # Process this batch
+    process_batch(response.mentions)
+    
+    if not response.has_more or not response.links or not response.links.more:
+        break
+    
+    cursor = response.links.more
+```
+
+### Early termination
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Find first mention matching a condition
+for mention in client.iter_mentions(
+    account_id="123",
+    alert_id="456",
+    limit=100
+):
+    if "urgent" in mention.title.lower():
+        print(f"Found urgent mention: {mention.id}")
+        break  # Stop iterating
+```

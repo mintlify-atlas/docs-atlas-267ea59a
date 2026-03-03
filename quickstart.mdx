@@ -1,80 +1,303 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with Mention Python in under 5 minutes
 ---
 
-## Get started in three steps
+This guide will walk you through making your first API calls with the Mention Python SDK. By the end, you'll be able to fetch alerts and mentions from your Mention account.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Before you begin, make sure you have:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+- Python 3.14 or higher installed
+- The Mention Python SDK installed (`pip install mention_python`)
+- A valid Mention access token
+- Your Mention account ID
 
-### Step 2: Deploy your changes
+<Note>
+If you haven't installed the SDK yet, check out our [Installation guide](/installation).
+</Note>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+## Your first API call
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+<Steps>
+  <Step title="Import and initialize the client">
+    Start by importing the `MentionClient` and initializing it with your access token:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```python
+    from mention import MentionClient
 
-### Step 3: Go live
+    # Initialize the client with your access token
+    client = MentionClient(access_token="your-token-here")
+    ```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    <Tip>
+    Store your access token in environment variables rather than hardcoding it. Use `python-dotenv` to load from a `.env` file.
+    </Tip>
+  </Step>
+
+  <Step title="Fetch your account information">
+    Verify your connection by fetching your account details:
+
+    ```python
+    # Get your account information
+    account = client.get_account_me()
+    print(f"Account name: {account.name}")
+    print(f"Account ID: {account.id}")
+    ```
+
+    This confirms your authentication is working and retrieves your account ID for subsequent requests.
+  </Step>
+
+  <Step title="Get all alerts">
+    Fetch all monitoring alerts configured in your account:
+
+    ```python
+    # Fetch all alerts for your account
+    alerts_response = client.get_alerts(account_id=account.id)
+
+    # Display alert information
+    for alert in alerts_response.alerts:
+        print(f"Alert: {alert.name}")
+        print(f"  ID: {alert.id}")
+        print(f"  Query: {alert.query.included_keywords}")
+        print()
+    ```
+
+    The response includes all alerts with their names, IDs, and query configurations.
+  </Step>
+
+  <Step title="Fetch mentions for an alert">
+    Get recent mentions for a specific alert:
+
+    ```python
+    # Get the first alert
+    alert = alerts_response.alerts[0]
+
+    # Fetch mentions for this alert
+    mentions = client.get_mentions(
+        account_id=account.id,
+        alert_id=alert.id,
+        limit=10  # Fetch the 10 most recent mentions
+    )
+
+    # Display mention details
+    for mention in mentions.mentions:
+        print(f"Title: {mention.title}")
+        print(f"Source: {mention.source.name if mention.source else 'Unknown'}")
+        print(f"URL: {mention.original_url}")
+        print(f"Published: {mention.published_at}")
+        print()
+    ```
+
+    <Note>
+    Mentions can be filtered by date, source, read status, sentiment tone, and more. See the API reference for all available filters.
+    </Note>
+  </Step>
+
+  <Step title="Fetch a specific mention">
+    Retrieve detailed information about a single mention:
+
+    ```python
+    # Get a specific mention by ID
+    mention_id = mentions.mentions[0].id
+
+    mention = client.get_mention(
+        account_id=account.id,
+        alert_id=alert.id,
+        mention_id=mention_id
+    )
+
+    print(f"Title: {mention.title}")
+    print(f"Description: {mention.description}")
+    print(f"URL: {mention.original_url}")
+    print(f"Tone: {mention.tone}")
+    ```
+  </Step>
+</Steps>
+
+## Complete example
+
+Here's a complete working example that puts it all together:
+
+```python complete_example.py
+from mention import MentionClient
+
+def main():
+    # Initialize the client
+    client = MentionClient(access_token="your-token")
+
+    # Get account information
+    account = client.get_account_me()
+    print(f"Connected as: {account.name}\n")
+
+    # Fetch all alerts
+    alerts_response = client.get_alerts(account_id=account.id)
+    print(f"Found {len(alerts_response.alerts)} alerts\n")
+
+    # Process the first alert
+    if alerts_response.alerts:
+        alert = alerts_response.alerts[0]
+        print(f"Alert: {alert.name}")
+
+        # Get recent mentions
+        mentions = client.get_mentions(
+            account_id=account.id,
+            alert_id=alert.id,
+            limit=5
+        )
+
+        print(f"Recent mentions: {len(mentions.mentions)}\n")
+
+        for mention in mentions.mentions:
+            print(f"  - {mention.title}")
+            print(f"    {mention.original_url}")
+            print()
+
+if __name__ == "__main__":
+    main()
+```
+
+## Using async client
+
+For better performance with concurrent requests, use the async client:
+
+```python async_example.py
+import asyncio
+from mention import AsyncMentionClient
+
+async def main():
+    # Initialize async client
+    async with AsyncMentionClient(access_token="your-token") as client:
+        # Get account info
+        account = await client.get_account_me()
+        print(f"Account: {account.name}")
+
+        # Fetch alerts
+        alerts = await client.get_alerts(account_id=account.id)
+
+        # Fetch mentions for the first alert
+        if alerts.alerts:
+            alert = alerts.alerts[0]
+            mentions = await client.get_mentions(
+                account_id=account.id,
+                alert_id=alert.id,
+                limit=10
+            )
+
+            for mention in mentions.mentions:
+                print(f"- {mention.title}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+<Tip>
+The async client (`AsyncMentionClient`) is ideal for applications that need to make multiple API requests concurrently, such as processing mentions from multiple alerts simultaneously.
+</Tip>
+
+## Advanced filtering
+
+Filter mentions by various criteria:
+
+```python
+from datetime import datetime, timedelta
+
+# Fetch mentions from the last 7 days
+week_ago = datetime.now() - timedelta(days=7)
+
+mentions = client.get_mentions(
+    account_id=account.id,
+    alert_id=alert.id,
+    limit=100,
+    not_before_date=week_ago,  # Only mentions from the last week
+    tone="positive",            # Only positive sentiment
+    read=False,                 # Only unread mentions
+    source="twitter"            # Only from Twitter
+)
+```
+
+## Pagination with iter_mentions
+
+For large result sets, use the iterator to automatically handle pagination:
+
+```python
+# Iterate over all mentions with automatic pagination
+for mention in client.iter_mentions(
+    account_id=account.id,
+    alert_id=alert.id,
+    limit=100  # Page size
+):
+    print(f"Processing: {mention.title}")
+    # The iterator automatically fetches more pages as needed
+```
+
+## Error handling
+
+Handle API errors gracefully:
+
+```python
+from mention import (
+    MentionClient,
+    MentionAuthError,
+    MentionNotFoundError,
+    MentionRateLimitError,
+    MentionConnectionError
+)
+
+try:
+    client = MentionClient(access_token="your-token")
+    alerts = client.get_alerts(account_id="invalid-id")
+
+except MentionAuthError as e:
+    print(f"Authentication failed: {e}")
+    print(f"Status code: {e.status_code}")
+
+except MentionNotFoundError as e:
+    print(f"Resource not found: {e}")
+
+except MentionRateLimitError as e:
+    print(f"Rate limit exceeded. Retry after: {e.retry_after} seconds")
+
+except MentionConnectionError as e:
+    print(f"Connection error: {e}")
+```
+
+<Warning>
+The SDK includes automatic retry logic with exponential backoff. Rate limit errors will be retried automatically up to the configured `max_retries` value.
+</Warning>
+
+## Using context managers
+
+Ensure proper resource cleanup with context managers:
+
+```python
+# Synchronous client
+with MentionClient(access_token="your-token") as client:
+    alerts = client.get_alerts(account_id="your-account-id")
+    # Client is automatically closed when exiting the context
+
+# Async client
+async with AsyncMentionClient(access_token="your-token") as client:
+    alerts = await client.get_alerts(account_id="your-account-id")
+    # Client is automatically closed when exiting the context
+```
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+Now that you've made your first API calls, explore more features:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Manage alerts" icon="bell" href="/api/alerts">
+    Create, update, and delete monitoring alerts
+  </Card>
+  <Card title="Work with mentions" icon="message" href="/api/mentions">
+    Curate mentions, mark as read, and add tags
+  </Card>
+  <Card title="Create tasks" icon="check" href="/api/tasks">
+    Assign tasks to team members for mention follow-up
+  </Card>
+  <Card title="Get statistics" icon="chart-line" href="/api/stats">
+    Analyze mention trends and sentiment over time
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

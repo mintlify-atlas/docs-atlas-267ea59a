@@ -1,0 +1,189 @@
+---
+title: Installation
+description: Install and configure the Mention Python SDK
+---
+
+## Install with pip
+
+<Steps>
+  <Step title="Install the package">
+    Install the Mention Python SDK using pip:
+
+    ```bash
+    python3 -m pip install mention_python
+    ```
+
+    <Tip>
+    We recommend using Python 3.14 or later for the best experience. The SDK requires Python 3.14+ as specified in the project configuration.
+    </Tip>
+  </Step>
+
+  <Step title="Verify your Python version">
+    Ensure you're running a compatible Python version:
+
+    ```bash
+    python3 --version
+    ```
+
+    You should see Python 3.14 or higher. If you need to upgrade, visit [python.org](https://www.python.org/downloads/).
+  </Step>
+
+  <Step title="Optional: Install development dependencies">
+    If you're contributing to the project or want to run tests, install the dev dependencies:
+
+    ```bash
+    python3 -m pip install mention_python[dev]
+    ```
+
+    This includes:
+    - pytest and pytest plugins for testing
+    - mypy for type checking
+    - ruff for linting and formatting
+    - pre-commit hooks
+  </Step>
+</Steps>
+
+## Get your API credentials
+
+<Steps>
+  <Step title="Log in to your Mention account">
+    Navigate to [mention.com](https://mention.com) and log in to your account. If you don't have an account yet, you'll need to sign up for a Mention plan.
+  </Step>
+
+  <Step title="Create an OAuth2 application">
+    In your Mention account settings, create a new OAuth2 application to obtain your credentials:
+
+    1. Go to Account Settings > API
+    2. Click "Create Application"
+    3. Fill in your application details
+    4. Note your **Client ID** and **Client Secret**
+  </Step>
+
+  <Step title="Obtain an access token">
+    Use the OAuth2 flow to obtain an access token. The Mention API uses OAuth2 for authentication.
+
+    <Warning>
+    Keep your access token secure! Never commit it to version control or share it publicly.
+    </Warning>
+
+    You can use the Mention OAuth2 flow to get an access token, or if you have an existing token, proceed to the next step.
+  </Step>
+
+  <Step title="Store your credentials securely">
+    Create a `.env` file in your project root to store your credentials:
+
+    ```bash
+    MENTION_ACCESS_TOKEN=your_access_token_here
+    MENTION_ACCOUNT_ID=your_account_id_here
+    ```
+
+    The SDK supports loading configuration from environment variables using python-dotenv.
+  </Step>
+</Steps>
+
+## Configuration options
+
+The Mention SDK can be configured using environment variables or by passing parameters directly to the client.
+
+### Using environment variables
+
+Create a `.env` file with your configuration:
+
+```bash
+MENTION_ACCESS_TOKEN=your_access_token
+MENTION_BASE_URL=https://api.mention.net/api
+MENTION_TIMEOUT=30.0
+MENTION_MAX_RETRIES=3
+```
+
+Then use the configuration in your code:
+
+```python
+from mention import MentionClient, MentionConfig
+
+# Load config from environment variables
+config = MentionConfig.from_env()
+client = MentionClient.from_config(config)
+```
+
+### Using direct initialization
+
+Alternatively, pass parameters directly when creating the client:
+
+```python
+from mention import MentionClient
+
+client = MentionClient(
+    access_token="your-token",
+    base_url="https://api.mention.net/api",
+    timeout=30.0,
+    max_retries=3,
+    retry_delay=1.0
+)
+```
+
+### Configuration parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `access_token` | `str` | Required | OAuth2 access token for authentication |
+| `base_url` | `str` | `https://api.mention.net/api` | Base URL for the Mention API |
+| `timeout` | `float` | `30.0` | Request timeout in seconds |
+| `max_retries` | `int` | `3` | Maximum number of retry attempts |
+| `retry_delay` | `float` | `1.0` | Base delay between retries in seconds |
+
+## Verify installation
+
+<Steps>
+  <Step title="Test your installation">
+    Create a simple test script to verify everything works:
+
+    ```python test_mention.py
+    from mention import MentionClient
+
+    # Initialize the client
+    client = MentionClient(access_token="your-token")
+
+    # Fetch app data to verify connection
+    app_data = client.get_app_data()
+    print(f"Connected successfully! Available sources: {len(app_data.sources)}")
+    ```
+  </Step>
+
+  <Step title="Run the test">
+    Execute your test script:
+
+    ```bash
+    python3 test_mention.py
+    ```
+
+    If you see output showing available sources, your installation is working correctly!
+  </Step>
+
+  <Step title="Handle common issues">
+    If you encounter errors:
+
+    <Warning>
+    **Authentication failed (401)**: Check that your access token is valid and not expired.
+    </Warning>
+
+    <Warning>
+    **Connection errors**: Verify your internet connection and that you can reach api.mention.net.
+    </Warning>
+
+    <Warning>
+    **Import errors**: Ensure the package is installed in the correct Python environment.
+    </Warning>
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart guide" icon="rocket" href="/quickstart">
+    Follow our quickstart to make your first API calls
+  </Card>
+  <Card title="API reference" icon="book" href="/api/mention-client">
+    Explore all available methods and parameters
+  </Card>
+</CardGroup>

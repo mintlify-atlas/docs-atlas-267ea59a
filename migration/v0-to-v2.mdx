@@ -1,0 +1,642 @@
+---
+title: "Migration Guide: v0.x to v2.0"
+description: "Complete guide for migrating from v0.x to v2.0 of the Mention Python SDK"
+---
+
+## Overview
+
+Version 2.0 represents a complete rewrite of the Mention Python SDK with modern Python best practices, comprehensive type hints, and a significantly improved developer experience.
+
+<Warning>
+**Breaking Changes Ahead**
+
+v2.0 introduces major breaking changes. This is a complete API redesign that requires code modifications. All legacy API classes have been removed and replaced with a modern client-based architecture.
+</Warning>
+
+## Key Changes
+
+### What's New in v2.0
+
+- **Modern `MentionClient` class** with full type hints and Pydantic v2 models
+- **Async support** via `AsyncMentionClient` for high-performance applications
+- **Automatic pagination** with `iter_mentions()` method
+- **Enhanced error handling** with comprehensive exception hierarchy
+- **Retry logic** with exponential backoff and rate limit handling
+- **Configuration management** via `MentionConfig` class and environment variables
+- **Context manager support** for automatic resource cleanup
+- **Command-line interface** (`mention` command)
+
+### Breaking Changes
+
+<Warning>
+The following changes require code modifications:
+</Warning>
+
+#### 1. Minimum Python Version
+
+**v0.x:** Python 2.7+ and Python 3.4+  
+**v2.0:** Python 3.10+
+
+<CodeGroup>
+```bash v0.x Requirements
+python >= 2.7
+```
+
+```bash v2.0 Requirements
+python >= 3.10
+```
+</CodeGroup>
+
+#### 2. HTTP Library Change
+
+**v0.x:** Uses `requests` library  
+**v2.0:** Uses `httpx` library (supports both sync and async)
+
+#### 3. Data Validation
+
+**v0.x:** Manual dictionary handling  
+**v2.0:** Pydantic v2 models with automatic validation
+
+#### 4. Project Structure
+
+**v0.x:** Flat module structure  
+**v2.0:** Modern `src/` layout with organized submodules
+
+## API Class Mapping
+
+All legacy API classes have been removed and replaced with methods on the `MentionClient` class:
+
+| v0.x API Class | v2.0 Client Method |
+|----------------|-------------------|
+| `FetchAMentionAPI` | `client.get_mention()` |
+| `FetchAllMentionsAPI` | `client.get_mentions()` |
+| `FetchAnAlertAPI` | `client.get_alert()` |
+| `FetchAlertsAPI` | `client.get_alerts()` |
+| `CreateAnAlertAPI` | `client.create_alert()` |
+| `UpdateAnAlertAPI` | `client.update_alert()` |
+| `CurateAMentionAPI` | `client.curate_mention()` |
+| `MarkAllMentionsReadAPI` | `client.mark_all_mentions_read()` |
+| `AppDataAPI` | `client.get_app_data()` |
+
+## Migration Steps
+
+<Steps>
+  <Step title="Update Python version">
+    Ensure you're using Python 3.10 or later:
+    
+    ```bash
+    python --version  # Should be 3.10+
+    ```
+  </Step>
+
+  <Step title="Install v2.0">
+    Update to the latest version:
+    
+    ```bash
+    pip install --upgrade mention
+    ```
+  </Step>
+
+  <Step title="Update imports">
+    Change your import statements to use the new client-based API.
+  </Step>
+
+  <Step title="Replace API classes with client methods">
+    Refactor your code to use the new `MentionClient` class instead of individual API classes.
+  </Step>
+
+  <Step title="Update error handling">
+    Use the new exception hierarchy for more granular error handling.
+  </Step>
+
+  <Step title="Test thoroughly">
+    Test all API interactions to ensure they work correctly with the new client.
+  </Step>
+</Steps>
+
+## Before and After Examples
+
+### Basic Setup
+
+<CodeGroup>
+```python v0.x
+import mention
+
+# No centralized client - each API call creates a new instance
+access_token = "your-token"
+account_id = "your-account-id"
+```
+
+```python v2.0
+from mention import MentionClient
+
+# Create a single client instance
+client = MentionClient(access_token="your-token")
+account_id = "your-account-id"
+```
+</CodeGroup>
+
+### Fetching Alerts
+
+<CodeGroup>
+```python v0.x
+import mention
+
+# Create API class instance for each operation
+alerts_api = mention.FetchAlertsAPI(access_token, account_id)
+data = alerts_api.query()
+
+# Access raw dictionary data
+alerts = data['alerts']
+for alert_data in alerts:
+    alert_name = alert_data['alert']['name']
+    print(alert_name)
+```
+
+```python v2.0
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Call method directly on client
+response = client.get_alerts(account_id)
+
+# Use typed models
+for alert in response.alerts:
+    print(alert.name)  # Type-safe attribute access
+```
+</CodeGroup>
+
+### Fetching a Single Mention
+
+<CodeGroup>
+```python v0.x
+import mention
+
+# Requires multiple parameters in constructor
+mention_api = mention.FetchAMentionAPI(
+    access_token,
+    account_id,
+    alert_id,
+    mention_id
+)
+data = mention_api.query()
+
+# Access dictionary fields
+title = data['title']
+description = data['description']
+url = data['original_url']
+```
+
+```python v2.0
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Cleaner method signature
+mention = client.get_mention(
+    account_id,
+    alert_id,
+    mention_id
+)
+
+# Type-safe attribute access
+title = mention.title
+description = mention.description
+url = mention.original_url
+```
+</CodeGroup>
+
+### Creating an Alert
+
+<CodeGroup>
+```python v0.x
+import mention
+
+# Complex constructor with all parameters
+create_api = mention.CreateAnAlertAPI(
+    access_token,
+    account_id,
+    name="Brand Monitor",
+    query="MyBrand OR MyProduct",
+    languages=["en", "es"]
+)
+data = create_api.query()
+alert_id = data['alert']['id']
+```
+
+```python v2.0
+from mention import MentionClient, CreateAlertRequest, AlertQuery, QueryType
+
+client = MentionClient(access_token="your-token")
+
+# Use typed request models
+request = CreateAlertRequest(
+    name="Brand Monitor",
+    query=AlertQuery(
+        type=QueryType.BASIC,
+        included_keywords=["MyBrand", "MyProduct"]
+    ),
+    languages=["en", "es"]
+)
+
+alert = client.create_alert(account_id, request)
+alert_id = alert.id  # Type-safe access
+```
+</CodeGroup>
+
+### Curating a Mention
+
+<CodeGroup>
+```python v0.x
+import mention
+
+# Create API instance
+curate_api = mention.CurateAMentionAPI(
+    access_token,
+    account_id,
+    alert_id,
+    mention_id
+)
+# Call query with parameters
+data = curate_api.query(favorite=True, read=True)
+```
+
+```python v2.0
+from mention import MentionClient, CurateMentionRequest, Tone
+
+client = MentionClient(access_token="your-token")
+
+# Use typed request model
+request = CurateMentionRequest(
+    favorite=True,
+    read=True,
+    tone=Tone.POSITIVE
+)
+
+mention = client.curate_mention(
+    account_id,
+    alert_id,
+    mention_id,
+    request
+)
+```
+</CodeGroup>
+
+### Marking All Mentions as Read
+
+<CodeGroup>
+```python v0.x
+import mention
+
+mark_read_api = mention.MarkAllMentionsReadAPI(
+    access_token,
+    account_id,
+    alert_id
+)
+data = mark_read_api.query()
+```
+
+```python v2.0
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+result = client.mark_all_mentions_read(account_id, alert_id)
+# Returns True on success
+```
+</CodeGroup>
+
+### Fetching Multiple Mentions with Pagination
+
+<CodeGroup>
+```python v0.x
+import mention
+
+# Manual pagination required
+cursor = None
+all_mentions = []
+
+while True:
+    mentions_api = mention.FetchAllMentionsAPI(
+        access_token,
+        account_id,
+        alert_id
+    )
+    data = mentions_api.query(limit=100, cursor=cursor)
+    
+    all_mentions.extend(data['mentions'])
+    
+    if not data.get('has_more'):
+        break
+    cursor = data['links']['more']
+```
+
+```python v2.0
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# Automatic pagination with iterator
+all_mentions = []
+for mention in client.iter_mentions(account_id, alert_id, limit=100):
+    all_mentions.append(mention)
+
+# Or collect all at once
+all_mentions = list(client.iter_mentions(account_id, alert_id))
+```
+</CodeGroup>
+
+### Error Handling
+
+<CodeGroup>
+```python v0.x
+import mention
+
+try:
+    alerts_api = mention.FetchAlertsAPI(access_token, account_id)
+    data = alerts_api.query()
+except Exception as e:
+    # Generic error handling
+    print(f"Error: {e}")
+```
+
+```python v2.0
+from mention import (
+    MentionClient,
+    MentionAuthError,
+    MentionRateLimitError,
+    MentionNotFoundError,
+    MentionAPIError
+)
+
+client = MentionClient(access_token="your-token")
+
+try:
+    response = client.get_alerts(account_id)
+except MentionAuthError as e:
+    # Handle authentication errors
+    print(f"Auth failed: {e}")
+except MentionRateLimitError as e:
+    # Handle rate limiting with retry_after
+    print(f"Rate limited. Retry after {e.retry_after} seconds")
+except MentionNotFoundError as e:
+    # Handle 404 errors
+    print(f"Resource not found: {e}")
+except MentionAPIError as e:
+    # Handle other API errors
+    print(f"API error: {e.status_code} - {e}")
+```
+</CodeGroup>
+
+## Advanced Features in v2.0
+
+### Using Context Manager
+
+```python
+from mention import MentionClient
+
+# Automatic resource cleanup
+with MentionClient(access_token="your-token") as client:
+    alerts = client.get_alerts(account_id)
+    for alert in alerts.alerts:
+        print(alert.name)
+# Client is automatically closed
+```
+
+### Configuration Management
+
+```python
+from mention import MentionClient, MentionConfig
+
+# Load from environment variables
+config = MentionConfig.from_env()
+client = MentionClient.from_config(config)
+
+# Or configure manually
+config = MentionConfig(
+    access_token="your-token",
+    timeout=30.0,
+    max_retries=3,
+    retry_delay=1.0
+)
+client = MentionClient.from_config(config)
+```
+
+### Async Support
+
+```python
+import asyncio
+from mention import AsyncMentionClient
+
+async def fetch_mentions():
+    async with AsyncMentionClient(access_token="your-token") as client:
+        response = await client.get_mentions(account_id, alert_id)
+        return response.mentions
+
+mentions = asyncio.run(fetch_mentions())
+```
+
+### Filtering Mentions
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+
+# v2.0 supports rich filtering options
+mentions = client.get_mentions(
+    account_id,
+    alert_id,
+    limit=100,
+    source="twitter",
+    read=False,
+    favorite=True,
+    tone="positive"
+)
+```
+
+## What to Update
+
+### 1. Import Statements
+
+<CodeGroup>
+```python v0.x
+import mention
+from mention import FetchAlertsAPI, FetchAMentionAPI
+```
+
+```python v2.0
+from mention import MentionClient
+from mention import Alert, Mention, CreateAlertRequest
+```
+</CodeGroup>
+
+### 2. Client Initialization
+
+<CodeGroup>
+```python v0.x
+# No client needed - API classes instantiated per request
+access_token = "your-token"
+```
+
+```python v2.0
+# Create single client instance
+client = MentionClient(access_token="your-token")
+```
+</CodeGroup>
+
+### 3. API Calls
+
+Replace `APIClass().query()` pattern with `client.method()`:
+
+<CodeGroup>
+```python v0.x
+api = mention.FetchAlertsAPI(access_token, account_id)
+data = api.query()
+```
+
+```python v2.0
+response = client.get_alerts(account_id)
+```
+</CodeGroup>
+
+### 4. Data Access
+
+Replace dictionary access with typed attribute access:
+
+<CodeGroup>
+```python v0.x
+alert_name = data['alerts'][0]['alert']['name']
+mention_title = data['mention']['title']
+```
+
+```python v2.0
+alert_name = response.alerts[0].name
+mention_title = mention.title
+```
+</CodeGroup>
+
+### 5. Error Handling
+
+Use specific exception types instead of generic exceptions:
+
+<CodeGroup>
+```python v0.x
+try:
+    data = api.query()
+except Exception:
+    pass
+```
+
+```python v2.0
+from mention import MentionAuthError, MentionNotFoundError
+
+try:
+    data = client.get_alerts(account_id)
+except MentionAuthError:
+    # Handle auth errors
+    pass
+except MentionNotFoundError:
+    # Handle 404 errors
+    pass
+```
+</CodeGroup>
+
+## Dependencies Changed
+
+### Removed Dependencies
+
+- `requests`
+- `requests-oauthlib`
+- `Pipfile`
+
+### New Dependencies
+
+- `httpx` - Modern HTTP client with sync and async support
+- `pydantic` v2 - Data validation and settings management
+- `python-dotenv` - Environment variable support
+
+### Development Tools
+
+- `uv` - Fast Python package installer and resolver
+- `ruff` - All-in-one linter and formatter (replaces black, isort, pylint)
+- `hatchling` - Modern build backend (replaces setuptools)
+
+## Troubleshooting
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion title="ImportError: cannot import name 'FetchAlertsAPI'">
+    **Cause:** The legacy API classes have been removed in v2.0.
+    
+    **Solution:** Replace with `MentionClient` and the appropriate method:
+    ```python
+    # Old
+    from mention import FetchAlertsAPI
+    
+    # New
+    from mention import MentionClient
+    client = MentionClient(access_token="your-token")
+    ```
+  </Accordion>
+
+  <Accordion title="TypeError: 'dict' object has no attribute 'name'">
+    **Cause:** v2.0 returns typed Pydantic models, not dictionaries.
+    
+    **Solution:** Access attributes directly instead of dictionary keys:
+    ```python
+    # Old
+    name = data['alert']['name']
+    
+    # New
+    name = alert.name
+    ```
+  </Accordion>
+
+  <Accordion title="Python version compatibility error">
+    **Cause:** v2.0 requires Python 3.10 or later.
+    
+    **Solution:** Upgrade your Python version:
+    ```bash
+    # Check current version
+    python --version
+    
+    # Install Python 3.10+ using your package manager
+    # For example, with pyenv:
+    pyenv install 3.10
+    pyenv local 3.10
+    ```
+  </Accordion>
+
+  <Accordion title="httpx module not found">
+    **Cause:** The new HTTP client library is not installed.
+    
+    **Solution:** Reinstall the mention package:
+    ```bash
+    pip install --upgrade mention
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Getting Help
+
+If you encounter issues during migration:
+
+1. Check the [API Reference](/api/mention-client) for detailed method documentation
+2. Review the [Guides](/guides/working-with-alerts) section for common use cases
+3. Check the [GitHub repository](https://github.com/mazi76erX2/mention-python) for issues and discussions
+4. Open a new issue if your problem isn't already addressed
+
+## Benefits of Migrating
+
+While migration requires code changes, v2.0 provides significant benefits:
+
+- **Type Safety:** Full type hints with IDE autocomplete and type checking
+- **Better Error Handling:** Specific exceptions for different error conditions
+- **Automatic Retry:** Built-in retry logic with exponential backoff
+- **Performance:** Async support for high-throughput applications
+- **Developer Experience:** Cleaner API, better documentation, modern tooling
+- **Reliability:** Automatic pagination, rate limit handling
+- **Maintainability:** Validated data models reduce runtime errors

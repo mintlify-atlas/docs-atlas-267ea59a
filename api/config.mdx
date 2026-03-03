@@ -1,0 +1,307 @@
+---
+title: MentionConfig
+description: Configuration management for the Mention API client
+---
+
+## Overview
+
+The `MentionConfig` class provides a structured way to manage configuration settings for the Mention API client. It supports loading configuration from environment variables and creating client instances with consistent settings.
+
+## Class Definition
+
+`MentionConfig` is a frozen dataclass (immutable) with the following fields:
+
+<ParamField path="access_token" type="str" required>
+  OAuth2 access token for authentication. This is the only required field.
+</ParamField>
+
+<ParamField path="account_id" type="str | None" default="None">
+  Default account ID to use with the client. Optional.
+</ParamField>
+
+<ParamField path="base_url" type="str" default="https://api.mention.net/api">
+  Base URL for the Mention API
+</ParamField>
+
+<ParamField path="timeout" type="float" default="30.0">
+  Request timeout in seconds
+</ParamField>
+
+<ParamField path="max_retries" type="int" default="3">
+  Maximum number of retry attempts for failed requests
+</ParamField>
+
+<ParamField path="retry_delay" type="float" default="1.0">
+  Base delay between retries in seconds (uses exponential backoff)
+</ParamField>
+
+<ParamField path="extra" type="dict[str, Any]" default="{}">
+  Additional custom configuration fields
+</ParamField>
+
+## Class Methods
+
+### from_env
+
+Create a `MentionConfig` instance from environment variables.
+
+```python
+from mention import MentionConfig
+
+# Load from default .env file
+config = MentionConfig.from_env()
+
+# Load from specific .env file
+config = MentionConfig.from_env(".env.production")
+
+# Use custom prefix
+config = MentionConfig.from_env(prefix="MY_APP_")
+```
+
+<ParamField path="env_file" type="str | Path | None" default="None">
+  Path to .env file to load. If None, loads from default .env file in current directory.
+</ParamField>
+
+<ParamField path="prefix" type="str" default="MENTION_">
+  Prefix for environment variable names. The method looks for variables with this prefix first, then falls back to unprefixed names.
+</ParamField>
+
+<ResponseField name="return" type="MentionConfig">
+  Configured MentionConfig instance
+</ResponseField>
+
+<ResponseField name="raises" type="ValueError">
+  If the required ACCESS_TOKEN environment variable is not found
+</ResponseField>
+
+#### Environment Variable Mapping
+
+The `from_env` method looks for the following environment variables:
+
+| Config Field | Environment Variables | Default |
+|--------------|----------------------|--------|
+| `access_token` | `MENTION_ACCESS_TOKEN`, `ACCESS_TOKEN` | **Required** |
+| `account_id` | `MENTION_ACCOUNT_ID`, `ACCOUNT_ID` | None |
+| `base_url` | `MENTION_BASE_URL`, `BASE_URL` | https://api.mention.net/api |
+| `timeout` | `MENTION_TIMEOUT`, `TIMEOUT` | 30.0 |
+| `max_retries` | `MENTION_MAX_RETRIES`, `MAX_RETRIES` | 3 |
+| `retry_delay` | `MENTION_RETRY_DELAY`, `RETRY_DELAY` | 1.0 |
+
+**Note:** Variables with the prefix (e.g., `MENTION_ACCESS_TOKEN`) are checked first. If not found, the unprefixed version (e.g., `ACCESS_TOKEN`) is used as a fallback.
+
+### with_account
+
+Create a new config instance with a different account ID. Since `MentionConfig` is immutable, this method returns a new instance.
+
+```python
+config = MentionConfig.from_env()
+
+# Create a new config for a specific account
+account_config = config.with_account("my-account-id")
+```
+
+<ParamField path="account_id" type="str" required>
+  The new account ID to use
+</ParamField>
+
+<ResponseField name="return" type="MentionConfig">
+  New MentionConfig instance with the specified account_id
+</ResponseField>
+
+## Usage Examples
+
+### Creating Config from Environment
+
+```python
+from mention import MentionConfig
+
+# Create config from environment variables
+config = MentionConfig.from_env()
+
+print(config.access_token)  # From MENTION_ACCESS_TOKEN or ACCESS_TOKEN
+print(config.base_url)      # From MENTION_BASE_URL or default
+print(config.timeout)       # From MENTION_TIMEOUT or default
+```
+
+### Using Custom .env File
+
+```python
+from pathlib import Path
+from mention import MentionConfig
+
+# Load from specific environment file
+env_path = Path(".env.production")
+config = MentionConfig.from_env(env_file=env_path)
+```
+
+### Creating Config Manually
+
+```python
+from mention import MentionConfig
+
+# Create config with explicit values
+config = MentionConfig(
+    access_token="your-access-token",
+    account_id="your-account-id",
+    base_url="https://api.mention.net/api",
+    timeout=60.0,
+    max_retries=5,
+    retry_delay=2.0
+)
+```
+
+### Using Config with Clients
+
+```python
+from mention import MentionClient, AsyncMentionClient, MentionConfig
+
+# Load configuration
+config = MentionConfig.from_env()
+
+# Create synchronous client
+sync_client = MentionClient.from_config(config)
+
+# Create async client
+async_client = AsyncMentionClient.from_config(config)
+```
+
+### Working with Multiple Accounts
+
+```python
+from mention import MentionConfig, MentionClient
+
+# Base configuration
+base_config = MentionConfig.from_env()
+
+# Create configs for different accounts
+account1_config = base_config.with_account("account-1-id")
+account2_config = base_config.with_account("account-2-id")
+
+# Create clients for each account
+client1 = MentionClient.from_config(account1_config)
+client2 = MentionClient.from_config(account2_config)
+
+# Use clients
+alerts1 = client1.get_alerts(account1_config.account_id)
+alerts2 = client2.get_alerts(account2_config.account_id)
+```
+
+### Custom Prefix for Environment Variables
+
+```python
+from mention import MentionConfig
+
+# Use custom prefix for environment variables
+# This will look for MY_APP_ACCESS_TOKEN, MY_APP_BASE_URL, etc.
+config = MentionConfig.from_env(prefix="MY_APP_")
+```
+
+### Using Extra Configuration
+
+```python
+from mention import MentionConfig
+
+# Add custom configuration fields
+config = MentionConfig(
+    access_token="token",
+    extra={
+        "app_name": "MyApp",
+        "version": "1.0.0",
+        "custom_setting": True
+    }
+)
+
+print(config.extra["app_name"])  # "MyApp"
+```
+
+## Example .env File
+
+Create a `.env` file in your project root:
+
+```bash
+# Required
+MENTION_ACCESS_TOKEN=your-oauth2-access-token
+
+# Optional
+MENTION_ACCOUNT_ID=your-default-account-id
+MENTION_BASE_URL=https://api.mention.net/api
+MENTION_TIMEOUT=30.0
+MENTION_MAX_RETRIES=3
+MENTION_RETRY_DELAY=1.0
+```
+
+Then load it:
+
+```python
+from mention import MentionConfig, MentionClient
+
+config = MentionConfig.from_env()
+client = MentionClient.from_config(config)
+```
+
+## Best Practices
+
+### Security
+
+- Never commit `.env` files containing access tokens to version control
+- Add `.env` to your `.gitignore` file
+- Use environment-specific `.env` files (`.env.development`, `.env.production`)
+- Rotate access tokens regularly
+
+### Configuration Management
+
+```python
+import os
+from mention import MentionConfig, MentionClient
+
+# Determine environment
+environment = os.getenv("ENVIRONMENT", "development")
+
+# Load appropriate config
+if environment == "production":
+    config = MentionConfig.from_env(".env.production")
+else:
+    config = MentionConfig.from_env(".env.development")
+
+# Create client
+client = MentionClient.from_config(config)
+```
+
+### Validation
+
+```python
+from mention import MentionConfig
+
+try:
+    config = MentionConfig.from_env()
+except ValueError as e:
+    print(f"Configuration error: {e}")
+    # Handle missing configuration
+    exit(1)
+```
+
+## Immutability
+
+The `MentionConfig` class is immutable (frozen dataclass). Once created, its fields cannot be modified:
+
+```python
+config = MentionConfig.from_env()
+
+# This will raise an error
+config.timeout = 60.0  # ❌ FrozenInstanceError
+
+# Instead, create a new instance
+new_config = MentionConfig(
+    access_token=config.access_token,
+    base_url=config.base_url,
+    timeout=60.0,  # New value
+    max_retries=config.max_retries,
+    retry_delay=config.retry_delay
+)
+```
+
+Or use the `with_account` method for account changes:
+
+```python
+new_config = config.with_account("new-account-id")  # ✅
+```

@@ -1,0 +1,395 @@
+---
+title: Task, Tag, and Share Models
+description: Pydantic models for working with tasks, tags, and shares in the Mention Python SDK
+---
+
+## Task Models
+
+### Task
+
+Represents a task associated with a mention. Inherits from `MentionBaseModel`.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the task
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  Title of the task
+</ResponseField>
+
+<ResponseField name="description" type="string | None">
+  Detailed description of the task
+</ResponseField>
+
+<ResponseField name="status" type="TaskStatus" default="TaskStatus.PENDING">
+  Current status: `"pending"`, `"in_progress"`, `"completed"`, or `"cancelled"`
+</ResponseField>
+
+<ResponseField name="assigned_to" type="string | None">
+  User ID of the person assigned to the task
+</ResponseField>
+
+<ResponseField name="due_at" type="datetime | None">
+  Due date for the task
+</ResponseField>
+
+<ResponseField name="completed_at" type="datetime | None">
+  Timestamp when the task was completed
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime | None">
+  Timestamp when the task was created
+</ResponseField>
+
+<ResponseField name="updated_at" type="datetime | None">
+  Timestamp when the task was last updated
+</ResponseField>
+
+<ResponseField name="mention_id" type="string | None">
+  ID of the associated mention
+</ResponseField>
+
+<ResponseField name="alert_id" type="string | None">
+  ID of the associated alert
+</ResponseField>
+
+<ResponseField name="account_id" type="string | None">
+  ID of the account
+</ResponseField>
+
+```python
+from mention import Task, TaskStatus
+
+tasks = client.get_tasks(alert_id="alert-id", account_id="account-id")
+
+for task in tasks.tasks:
+    print(f"Task: {task.title}")
+    print(f"Status: {task.status}")
+    print(f"Assigned to: {task.assigned_to}")
+    print(f"Due: {task.due_at}")
+```
+
+### TasksResponse
+
+Response model containing a list of tasks. Inherits from `MentionBaseModel`.
+
+<ResponseField name="tasks" type="list[Task]" default="[]">
+  List of Task objects
+</ResponseField>
+
+```python
+from mention import TasksResponse
+
+response = client.get_tasks(alert_id="alert-id", account_id="account-id")
+print(f"Found {len(response.tasks)} tasks")
+
+pending = [t for t in response.tasks if t.status == "pending"]
+print(f"Pending tasks: {len(pending)}")
+```
+
+### CreateTaskRequest
+
+Request body for creating a new task. Inherits from `MentionBaseModel`.
+
+<ResponseField name="title" type="string" required>
+  Title of the task
+</ResponseField>
+
+<ResponseField name="description" type="string | None">
+  Detailed description of the task
+</ResponseField>
+
+<ResponseField name="status" type="TaskStatus" default="TaskStatus.PENDING">
+  Initial status of the task
+</ResponseField>
+
+<ResponseField name="assigned_to" type="string | None">
+  User ID to assign the task to
+</ResponseField>
+
+<ResponseField name="due_at" type="datetime | string | None">
+  Due date for the task (accepts datetime object or ISO string)
+</ResponseField>
+
+```python
+from mention import CreateTaskRequest
+from datetime import datetime, timedelta
+
+request = CreateTaskRequest(
+    title="Respond to customer inquiry",
+    description="Customer asked about pricing on Twitter",
+    status="pending",
+    assigned_to="user-123",
+    due_at=datetime.now() + timedelta(days=2)
+)
+
+task = client.create_task(
+    alert_id="alert-id",
+    account_id="account-id",
+    request=request
+)
+```
+
+### UpdateTaskRequest
+
+Request body for updating an existing task. All fields are optional. Inherits from `MentionBaseModel`.
+
+<ResponseField name="title" type="string | None">
+  Updated title
+</ResponseField>
+
+<ResponseField name="description" type="string | None">
+  Updated description
+</ResponseField>
+
+<ResponseField name="status" type="TaskStatus | None">
+  Updated status
+</ResponseField>
+
+<ResponseField name="assigned_to" type="string | None">
+  Updated assignee
+</ResponseField>
+
+<ResponseField name="due_at" type="datetime | string | None">
+  Updated due date
+</ResponseField>
+
+```python
+from mention import UpdateTaskRequest
+
+# Mark task as completed
+request = UpdateTaskRequest(status="completed")
+
+task = client.update_task(
+    task_id="task-123",
+    alert_id="alert-id",
+    account_id="account-id",
+    request=request
+)
+```
+
+### TaskStatus
+
+Task status enumeration:
+- `PENDING` = `"pending"` - Task is pending
+- `IN_PROGRESS` = `"in_progress"` - Task is in progress
+- `COMPLETED` = `"completed"` - Task is completed
+- `CANCELLED` = `"cancelled"` - Task is cancelled
+
+---
+
+## Tag Models
+
+### Tag
+
+Represents a tag that can be associated with alerts or mentions. Inherits from `MentionBaseModel`.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the tag
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Name of the tag
+</ResponseField>
+
+<ResponseField name="color" type="string | None">
+  Color code for the tag (e.g., "#FF5733")
+</ResponseField>
+
+```python
+from mention import Tag
+
+tags = client.get_tags(alert_id="alert-id", account_id="account-id")
+
+for tag in tags.tags:
+    print(f"Tag: {tag.name}")
+    if tag.color:
+        print(f"  Color: {tag.color}")
+```
+
+### TagsResponse
+
+Response model containing a list of tags. Inherits from `MentionBaseModel`.
+
+<ResponseField name="tags" type="list[Tag]" default="[]">
+  List of Tag objects
+</ResponseField>
+
+```python
+from mention import TagsResponse
+
+response = client.get_tags(alert_id="alert-id", account_id="account-id")
+print(f"Found {len(response.tags)} tags")
+```
+
+### CreateTagRequest
+
+Request body for creating a new tag. Inherits from `MentionBaseModel`.
+
+<ResponseField name="name" type="string" required>
+  Name of the tag
+</ResponseField>
+
+<ResponseField name="color" type="string | None">
+  Color code for the tag (hex format)
+</ResponseField>
+
+```python
+from mention import CreateTagRequest
+
+request = CreateTagRequest(
+    name="urgent",
+    color="#FF0000"
+)
+
+tag = client.create_tag(
+    alert_id="alert-id",
+    account_id="account-id",
+    request=request
+)
+```
+
+### UpdateTagRequest
+
+Request body for updating an existing tag. All fields are optional. Inherits from `MentionBaseModel`.
+
+<ResponseField name="name" type="string | None">
+  Updated name
+</ResponseField>
+
+<ResponseField name="color" type="string | None">
+  Updated color code
+</ResponseField>
+
+```python
+from mention import UpdateTagRequest
+
+request = UpdateTagRequest(
+    name="high-priority",
+    color="#FF6600"
+)
+
+tag = client.update_tag(
+    tag_id="tag-123",
+    alert_id="alert-id",
+    account_id="account-id",
+    request=request
+)
+```
+
+---
+
+## Share Models
+
+### Share
+
+Represents a share of an alert with another user. Inherits from `MentionBaseModel`.
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the share
+</ResponseField>
+
+<ResponseField name="alert_id" type="string" required>
+  ID of the shared alert
+</ResponseField>
+
+<ResponseField name="user_id" type="string | None">
+  ID of the user the alert is shared with
+</ResponseField>
+
+<ResponseField name="email" type="string | None">
+  Email address of the user the alert is shared with
+</ResponseField>
+
+<ResponseField name="permission" type="SharePermission" default="SharePermission.READ">
+  Permission level: `"read"`, `"write"`, or `"admin"`
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime | None">
+  Timestamp when the share was created
+</ResponseField>
+
+<ResponseField name="updated_at" type="datetime | None">
+  Timestamp when the share was last updated
+</ResponseField>
+
+```python
+from mention import Share
+
+shares = client.get_shares(alert_id="alert-id", account_id="account-id")
+
+for share in shares.shares:
+    print(f"Shared with: {share.email}")
+    print(f"Permission: {share.permission}")
+```
+
+### SharesResponse
+
+Response model containing a list of shares. Inherits from `MentionBaseModel`.
+
+<ResponseField name="shares" type="list[Share]" default="[]">
+  List of Share objects
+</ResponseField>
+
+```python
+from mention import SharesResponse
+
+response = client.get_shares(alert_id="alert-id", account_id="account-id")
+print(f"Alert shared with {len(response.shares)} users")
+```
+
+### CreateShareRequest
+
+Request body for creating a new share. Inherits from `MentionBaseModel`.
+
+<ResponseField name="email" type="string" required>
+  Email address of the user to share with
+</ResponseField>
+
+<ResponseField name="permission" type="SharePermission" default="SharePermission.READ">
+  Permission level to grant
+</ResponseField>
+
+```python
+from mention import CreateShareRequest
+
+request = CreateShareRequest(
+    email="colleague@company.com",
+    permission="write"
+)
+
+share = client.create_share(
+    alert_id="alert-id",
+    account_id="account-id",
+    request=request
+)
+```
+
+### UpdateShareRequest
+
+Request body for updating an existing share. Inherits from `MentionBaseModel`.
+
+<ResponseField name="permission" type="SharePermission | None">
+  Updated permission level
+</ResponseField>
+
+```python
+from mention import UpdateShareRequest
+
+# Upgrade user to admin permission
+request = UpdateShareRequest(permission="admin")
+
+share = client.update_share(
+    share_id="share-123",
+    alert_id="alert-id",
+    account_id="account-id",
+    request=request
+)
+```
+
+### SharePermission
+
+Share permission level enumeration:
+- `READ` = `"read"` - Read-only access to the alert
+- `WRITE` = `"write"` - Can read and modify the alert
+- `ADMIN` = `"admin"` - Full administrative access to the alert

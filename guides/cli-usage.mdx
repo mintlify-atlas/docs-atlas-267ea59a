@@ -1,0 +1,606 @@
+---
+title: "CLI Usage"
+description: "Use the Mention command-line interface for quick operations and automation"
+---
+
+## Overview
+
+The Mention Python SDK includes a command-line interface (CLI) for quick operations without writing code. Perfect for:
+
+- Testing API access
+- Scripting and automation
+- Quick data queries
+- CI/CD pipelines
+
+## Installation
+
+The CLI is included when you install the SDK:
+
+```bash
+pip install mention-python
+```
+
+Verify installation:
+
+```bash
+mention --version
+```
+
+## Authentication Setup
+
+The CLI requires authentication via environment variables:
+
+<Steps>
+
+<Step title="Set your access token">
+```bash
+export MENTION_ACCESS_TOKEN="your-access-token-here"
+```
+</Step>
+
+<Step title="(Optional) Set default account ID">
+```bash
+export MENTION_ACCOUNT_ID="your-account-id"
+```
+
+This allows you to omit `--account-id` from most commands.
+</Step>
+
+<Step title="(Optional) Configure other settings">
+```bash
+export MENTION_BASE_URL="https://api.mention.net/api"
+export MENTION_TIMEOUT="30"
+```
+</Step>
+
+</Steps>
+
+### Environment File
+
+Create a `.env` file for persistent configuration:
+
+```bash .env
+MENTION_ACCESS_TOKEN=your-access-token-here
+MENTION_ACCOUNT_ID=your-account-id
+MENTION_BASE_URL=https://api.mention.net/api
+MENTION_TIMEOUT=30
+```
+
+Load it before running commands:
+
+```bash
+source .env
+mention alerts list
+```
+
+## App Data
+
+Retrieve application configuration data (sources, languages, etc.):
+
+```bash
+mention app-data
+```
+
+<Accordion title="Example Output">
+```json
+{
+  "sources": [
+    "web",
+    "twitter",
+    "facebook",
+    "instagram",
+    "youtube",
+    "reddit",
+    "news",
+    "blog"
+  ],
+  "languages": [
+    {"code": "en", "name": "English"},
+    {"code": "fr", "name": "French"},
+    {"code": "es", "name": "Spanish"}
+  ]
+}
+```
+</Accordion>
+
+## Alert Commands
+
+Manage alerts from the command line:
+
+<Tabs>
+  <Tab title="List Alerts">
+    Get all alerts for an account:
+
+    ```bash
+    mention alerts list --account-id=abc123
+    ```
+
+    With default account ID set:
+
+    ```bash
+    mention alerts list
+    ```
+
+    <Accordion title="Example Output">
+    ```json
+    {
+      "alerts": [
+        {
+          "id": "alert-123",
+          "name": "Brand Monitoring",
+          "mentions_count": 1523,
+          "unread_mentions_count": 45,
+          "created_at": "2024-01-15T10:30:00Z"
+        }
+      ]
+    }
+    ```
+    </Accordion>
+  </Tab>
+  
+  <Tab title="Get Alert">
+    Get details for a specific alert:
+
+    ```bash
+    mention alerts get \
+      --account-id=abc123 \
+      --alert-id=alert-456
+    ```
+
+    Short flags:
+
+    ```bash
+    mention alerts get -a abc123 -i alert-456
+    ```
+  </Tab>
+  
+  <Tab title="Create Alert">
+    Create a new alert:
+
+    ```bash
+    mention alerts create \
+      --account-id=abc123 \
+      --name="Python API Monitoring" \
+      --keywords="python,api,sdk" \
+      --excluded="job,hiring" \
+      --languages="en,fr" \
+      --sources="twitter,reddit,news"
+    ```
+
+    Short flags:
+
+    ```bash
+    mention alerts create \
+      -a abc123 \
+      -n "Python Monitoring" \
+      -k "python,api" \
+      -e "job" \
+      -l "en" \
+      -s "twitter,reddit"
+    ```
+
+    <Accordion title="Example Output">
+    ```json
+    {
+      "id": "alert-789",
+      "name": "Python API Monitoring",
+      "query": {
+        "type": "basic",
+        "included_keywords": ["python", "api", "sdk"],
+        "excluded_keywords": ["job", "hiring"]
+      },
+      "languages": ["en", "fr"],
+      "sources": ["twitter", "reddit", "news"],
+      "created_at": "2024-03-03T12:00:00Z"
+    }
+
+    ✓ Alert created: alert-789
+    ```
+    </Accordion>
+  </Tab>
+  
+  <Tab title="Delete Alert">
+    Delete an alert permanently:
+
+    ```bash
+    mention alerts delete \
+      --account-id=abc123 \
+      --alert-id=alert-456
+    ```
+
+    <Warning>
+    This action is permanent and cannot be undone.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## Mention Commands
+
+Retrieve and manage mentions:
+
+<Tabs>
+  <Tab title="List Mentions">
+    Get mentions for an alert:
+
+    ```bash
+    mention mentions list \
+      --account-id=abc123 \
+      --alert-id=alert-456 \
+      --limit=50
+    ```
+
+    With filters:
+
+    ```bash
+    mention mentions list \
+      --account-id=abc123 \
+      --alert-id=alert-456 \
+      --source=twitter \
+      --tone=positive \
+      --read=false \
+      --limit=100
+    ```
+
+    Available filters:
+    - `--source`: Filter by source (twitter, reddit, news, etc.)
+    - `--tone`: Filter by tone (positive, negative, neutral)
+    - `--read`: Filter by read status (true/false)
+    - `--favorite`: Filter by favorite status (true/false)
+    - `--limit`: Maximum mentions to return (default: 100, max: 1000)
+  </Tab>
+  
+  <Tab title="Get Mention">
+    Get details for a specific mention:
+
+    ```bash
+    mention mentions get \
+      --account-id=abc123 \
+      --alert-id=alert-456 \
+      --mention-id=mention-789
+    ```
+
+    Short flags:
+
+    ```bash
+    mention mentions get -a abc123 -i alert-456 -m mention-789
+    ```
+  </Tab>
+  
+  <Tab title="Curate Mention">
+    Update a mention's properties:
+
+    ```bash
+    # Mark as favorite and read
+    mention mentions curate \
+      --account-id=abc123 \
+      --alert-id=alert-456 \
+      --mention-id=mention-789 \
+      --favorite=true \
+      --read=true
+    ```
+
+    ```bash
+    # Change tone to positive
+    mention mentions curate \
+      -a abc123 \
+      -i alert-456 \
+      -m mention-789 \
+      --tone=positive
+    ```
+
+    ```bash
+    # Move to trash
+    mention mentions curate \
+      -a abc123 \
+      -i alert-456 \
+      -m mention-789 \
+      --trashed=true
+    ```
+
+    Available options:
+    - `--favorite`: Set favorite status (true/false)
+    - `--read`: Set read status (true/false)
+    - `--trashed`: Set trashed status (true/false)
+    - `--tone`: Set tone (positive, negative, neutral)
+  </Tab>
+  
+  <Tab title="Mark All Read">
+    Mark all mentions as read for an alert:
+
+    ```bash
+    mention mentions mark-read \
+      --account-id=abc123 \
+      --alert-id=alert-456
+    ```
+
+    Output:
+    ```
+    ✓ All mentions for alert alert-456 marked as read
+    ```
+  </Tab>
+</Tabs>
+
+## Streaming Mentions
+
+Stream all mentions with automatic pagination:
+
+```bash
+mention mentions stream \
+  --account-id=abc123 \
+  --alert-id=alert-456 \
+  --limit=100 \
+  --max=1000
+```
+
+This will:
+1. Fetch mentions in pages of 100
+2. Automatically follow pagination
+3. Stop after 1000 total mentions (if `--max` specified)
+4. Output each mention as JSON
+
+### Stream with Filters
+
+```bash
+# Stream only unread Twitter mentions
+mention mentions stream \
+  --account-id=abc123 \
+  --alert-id=alert-456 \
+  --source=twitter \
+  --read=false \
+  --limit=50
+```
+
+## Output Formats
+
+All commands output JSON by default:
+
+```bash
+mention alerts list --account-id=abc123
+```
+
+You can pipe to `jq` for processing:
+
+```bash
+# Get just alert names
+mention alerts list --account-id=abc123 | jq '.alerts[].name'
+
+# Count unread mentions
+mention alerts list --account-id=abc123 | jq '.alerts[].unread_mentions_count' | jq -s add
+
+# Filter positive mentions
+mention mentions list -a abc123 -i alert-456 | jq '.mentions[] | select(.tone == "positive")'
+```
+
+## Scripting Examples
+
+### Daily Unread Report
+
+```bash daily-report.sh
+#!/bin/bash
+
+set -e
+
+# Load credentials
+source .env
+
+ACCOUNT_ID="$MENTION_ACCOUNT_ID"
+
+echo "=== Daily Mention Report ==="
+echo "Date: $(date)"
+echo ""
+
+# Get all alerts
+ALERTS=$(mention alerts list -a "$ACCOUNT_ID")
+
+# Process each alert
+echo "$ALERTS" | jq -r '.alerts[] | "\(.name): \(.unread_mentions_count) unread"'
+
+echo ""
+echo "Total unread: $(echo "$ALERTS" | jq '.alerts[].unread_mentions_count' | jq -s add)"
+```
+
+### Auto-Favorite Positive Mentions
+
+```bash auto-favorite.sh
+#!/bin/bash
+
+set -e
+
+source .env
+
+ACCOUNT_ID="$MENTION_ACCOUNT_ID"
+ALERT_ID="$1"
+
+if [ -z "$ALERT_ID" ]; then
+  echo "Usage: $0 <alert-id>"
+  exit 1
+fi
+
+echo "Processing positive mentions for alert $ALERT_ID..."
+
+# Get unread positive mentions
+MENTIONS=$(mention mentions list \
+  -a "$ACCOUNT_ID" \
+  -i "$ALERT_ID" \
+  --tone=positive \
+  --read=false \
+  --limit=100)
+
+# Favorite each mention
+echo "$MENTIONS" | jq -r '.mentions[].id' | while read -r MENTION_ID; do
+  echo "Favoriting $MENTION_ID..."
+  mention mentions curate \
+    -a "$ACCOUNT_ID" \
+    -i "$ALERT_ID" \
+    -m "$MENTION_ID" \
+    --favorite=true \
+    --read=true > /dev/null 2>&1
+done
+
+echo "Done!"
+```
+
+### Export Mentions to CSV
+
+```bash export-csv.sh
+#!/bin/bash
+
+set -e
+
+source .env
+
+ACCOUNT_ID="$MENTION_ACCOUNT_ID"
+ALERT_ID="$1"
+OUTPUT_FILE="mentions-$(date +%Y%m%d).csv"
+
+if [ -z "$ALERT_ID" ]; then
+  echo "Usage: $0 <alert-id>"
+  exit 1
+fi
+
+echo "Exporting mentions to $OUTPUT_FILE..."
+
+# Write CSV header
+echo "ID,Title,Source,Tone,Published,URL" > "$OUTPUT_FILE"
+
+# Stream mentions and convert to CSV
+mention mentions stream \
+  -a "$ACCOUNT_ID" \
+  -i "$ALERT_ID" \
+  --limit=100 \
+  | jq -r '[.id, .title, .source_name, .tone, .published_at, .original_url] | @csv' \
+  >> "$OUTPUT_FILE"
+
+echo "Exported to $OUTPUT_FILE"
+```
+
+## CI/CD Integration
+
+Use the CLI in GitHub Actions:
+
+```yaml .github/workflows/mention-report.yml
+name: Daily Mention Report
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily at 9 AM UTC
+  workflow_dispatch:
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Mention SDK
+        run: pip install mention-python
+
+      - name: Generate Report
+        env:
+          MENTION_ACCESS_TOKEN: ${{ secrets.MENTION_ACCESS_TOKEN }}
+          MENTION_ACCOUNT_ID: ${{ secrets.MENTION_ACCOUNT_ID }}
+        run: |
+          echo "## Daily Mention Report" > report.md
+          echo "" >> report.md
+          
+          # Get alerts
+          mention alerts list | jq -r '.alerts[] | "- **\(.name)**: \(.unread_mentions_count) unread"' >> report.md
+
+      - name: Post to Slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload-file-path: report.md
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+```
+
+## Help and Documentation
+
+Get help for any command:
+
+```bash
+# General help
+mention --help
+
+# Help for alerts
+mention alerts --help
+
+# Help for specific command
+mention mentions list --help
+```
+
+## Error Handling
+
+The CLI exits with appropriate status codes:
+
+- `0`: Success
+- `1`: General error
+- `130`: Interrupted (Ctrl+C)
+
+Errors are written to stderr:
+
+```bash
+mention alerts get --account-id=abc123 --alert-id=invalid 2> errors.log
+```
+
+## Common Flags
+
+Global flags available for all commands:
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--account-id` | `-a` | Account ID (or set `MENTION_ACCOUNT_ID`) |
+| `--output` | `-o` | Output format: `json` (default) or `table` |
+| `--version` | | Show version and exit |
+| `--help` | `-h` | Show help and exit |
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use environment variables">
+    Store credentials in environment variables instead of passing them as flags:
+    
+    ```bash
+    export MENTION_ACCESS_TOKEN="token"
+    export MENTION_ACCOUNT_ID="account-id"
+    ```
+    
+    This keeps credentials out of command history and scripts.
+  </Accordion>
+  
+  <Accordion title="Pipe to jq for processing">
+    Use `jq` to process JSON output:
+    
+    ```bash
+    mention alerts list | jq '.alerts[] | select(.mentions_count > 100)'
+    ```
+  </Accordion>
+  
+  <Accordion title="Use stream for large datasets">
+    Use `mentions stream` instead of `mentions list` for large result sets:
+    
+    ```bash
+    mention mentions stream -a account-id -i alert-id --max=10000
+    ```
+  </Accordion>
+  
+  <Accordion title="Error handling in scripts">
+    Check exit codes in scripts:
+    
+    ```bash
+    if ! mention alerts get -a "$ACCOUNT_ID" -i "$ALERT_ID" > /dev/null 2>&1; then
+      echo "Alert not found"
+      exit 1
+    fi
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Working with Alerts" icon="bell" href="/guides/working-with-alerts">
+    Learn alert management in Python code
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/mention-client">
+    Explore the complete API documentation
+  </Card>
+</CardGroup>

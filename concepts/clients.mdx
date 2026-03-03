@@ -1,0 +1,203 @@
+---
+title: Sync vs async clients
+description: Understand the differences between MentionClient and AsyncMentionClient
+---
+
+The Mention Python SDK provides both synchronous and asynchronous clients to suit different programming styles and use cases.
+
+## MentionClient (sync)
+
+The synchronous client is suitable for simple scripts, CLI tools, and applications that don't require concurrent API calls.
+
+### Basic usage
+
+```python
+from mention import MentionClient
+
+client = MentionClient(access_token="your-token")
+alerts = client.get_alerts(account_id="123")
+```
+
+### Context manager usage
+
+Both clients support context managers for automatic resource cleanup:
+
+```python
+from mention import MentionClient
+
+with MentionClient(access_token="your-token") as client:
+    account = client.get_account_me()
+    alerts = client.get_alerts(account.id)
+    # Client is automatically closed when exiting the context
+```
+
+The context manager automatically calls `close()` on the client, which closes the underlying HTTP connection.
+
+## AsyncMentionClient (async)
+
+The asynchronous client is ideal for web applications, concurrent operations, and high-throughput scenarios.
+
+### Basic usage
+
+```python
+import asyncio
+from mention import AsyncMentionClient
+
+async def main():
+    client = AsyncMentionClient(access_token="your-token")
+    alerts = await client.get_alerts(account_id="123")
+    await client.close()
+
+asyncio.run(main())
+```
+
+### Async context manager usage
+
+```python
+import asyncio
+from mention import AsyncMentionClient
+
+async def main():
+    async with AsyncMentionClient(access_token="your-token") as client:
+        account = await client.get_account_me()
+        alerts = await client.get_alerts(account.id)
+        # Client is automatically closed when exiting the context
+
+asyncio.run(main())
+```
+
+## Creating clients from configuration
+
+Both client types support the `from_config()` class method for creating instances from a `MentionConfig` object:
+
+### Sync client from config
+
+```python
+from mention import MentionClient, MentionConfig
+
+config = MentionConfig.from_env()
+client = MentionClient.from_config(config)
+```
+
+### Async client from config
+
+```python
+from mention import AsyncMentionClient, MentionConfig
+
+config = MentionConfig.from_env()
+client = AsyncMentionClient.from_config(config)
+```
+
+## Configuration options
+
+Both clients accept the same initialization parameters:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `access_token` | `str` | *required* | OAuth2 access token for authentication |
+| `base_url` | `str` | `https://api.mention.net/api` | Base URL for the Mention API |
+| `timeout` | `float` | `30.0` | Request timeout in seconds |
+| `max_retries` | `int` | `3` | Maximum number of retry attempts |
+| `retry_delay` | `float` | `1.0` | Base delay between retries in seconds |
+
+### Example with custom configuration
+
+```python
+from mention import MentionClient
+
+client = MentionClient(
+    access_token="your-token",
+    base_url="https://api.mention.net/api",
+    timeout=60.0,  # 60 second timeout
+    max_retries=5,  # Retry up to 5 times
+    retry_delay=2.0  # 2 second base delay
+)
+```
+
+## Retry behavior
+
+Both clients implement automatic retry logic with exponential backoff:
+
+- Connection errors and timeouts are automatically retried
+- Rate limit errors (429) respect the `Retry-After` header
+- Retry delay doubles with each attempt (exponential backoff)
+- After exceeding `max_retries`, a `MentionConnectionError` is raised
+
+```python
+from mention import MentionClient, MentionConnectionError
+
+client = MentionClient(
+    access_token="your-token",
+    max_retries=5,
+    retry_delay=1.0  # Will retry after 1s, 2s, 4s, 8s, 16s
+)
+
+try:
+    account = client.get_account_me()
+except MentionConnectionError as e:
+    print(f"Request failed after retries: {e}")
+```
+
+## Closing clients
+
+Always close clients when you're done to release resources:
+
+### Sync client
+
+```python
+client = MentionClient(access_token="your-token")
+try:
+    # Use the client
+    alerts = client.get_alerts(account_id="123")
+finally:
+    client.close()
+```
+
+### Async client
+
+```python
+async def main():
+    client = AsyncMentionClient(access_token="your-token")
+    try:
+        # Use the client
+        alerts = await client.get_alerts(account_id="123")
+    finally:
+        await client.close()
+```
+
+<Tip>
+Using context managers (with/async with) is the recommended approach as it automatically handles client cleanup.
+</Tip>
+
+## Choosing between sync and async
+
+### Use MentionClient (sync) when:
+
+- Building simple scripts or CLI tools
+- Making sequential API calls
+- Working in a synchronous codebase
+- Simplicity is more important than performance
+
+### Use AsyncMentionClient (async) when:
+
+- Building web applications (FastAPI, aiohttp, etc.)
+- Making concurrent API calls
+- Working in an async codebase
+- Performance and throughput are critical
+
+### Concurrent requests example
+
+```python
+import asyncio
+from mention import AsyncMentionClient
+
+async def fetch_alerts_for_accounts(account_ids: list[str]):
+    async with AsyncMentionClient(access_token="your-token") as client:
+        # Fetch alerts for multiple accounts concurrently
+        tasks = [client.get_alerts(account_id) for account_id in account_ids]
+        results = await asyncio.gather(*tasks)
+        return results
+
+account_ids = ["123", "456", "789"]
+results = asyncio.run(fetch_alerts_for_accounts(account_ids))
+```

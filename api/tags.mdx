@@ -1,0 +1,134 @@
+---
+title: "Tags"
+description: "Tag resource methods for managing alert tags"
+---
+
+The Tag resource provides methods for creating, retrieving, updating, and deleting tags for alerts.
+
+## get_tags
+
+Fetch all tags for an alert.
+
+```python
+response = client.get_tags("account-id", "alert-id")
+for tag in response.tags:
+    print(f"Tag: {tag.name}")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="response" type="TagsResponse">
+  [TagsResponse](/api/models/task-models) containing list of tags
+</ResponseField>
+
+## create_tag
+
+Create a new tag for an alert.
+
+```python
+from mention import CreateTagRequest
+
+request = CreateTagRequest(
+    name="Important",
+    color="#FF5733"
+)
+tag = client.create_tag("account-id", "alert-id", request)
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="request" type="CreateTagRequest" required>
+  Tag creation request
+</ParamField>
+
+### Returns
+
+<ResponseField name="tag" type="Tag">
+  Created [Tag](/api/models/task-models) object
+</ResponseField>
+
+## update_tag
+
+Update an existing tag.
+
+```python
+from mention import UpdateTagRequest
+
+request = UpdateTagRequest(
+    name="Very Important",
+    color="#FF0000"
+)
+tag = client.update_tag("account-id", "alert-id", "tag-id", request)
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="tag_id" type="str" required>
+  The tag ID
+</ParamField>
+
+<ParamField path="request" type="UpdateTagRequest" required>
+  Tag update request
+</ParamField>
+
+### Returns
+
+<ResponseField name="tag" type="Tag">
+  Updated [Tag](/api/models/task-models) object
+</ResponseField>
+
+## delete_tag
+
+Delete a tag.
+
+```python
+success = client.delete_tag("account-id", "alert-id", "tag-id")
+if success:
+    print("Tag deleted successfully")
+```
+
+### Parameters
+
+<ParamField path="account_id" type="str" required>
+  The account ID
+</ParamField>
+
+<ParamField path="alert_id" type="str" required>
+  The alert ID
+</ParamField>
+
+<ParamField path="tag_id" type="str" required>
+  The tag ID
+</ParamField>
+
+### Returns
+
+<ResponseField name="success" type="bool">
+  True if deletion was successful
+</ResponseField>

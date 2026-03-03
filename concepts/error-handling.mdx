@@ -1,0 +1,353 @@
+---
+title: Error handling
+description: Learn how to handle exceptions and errors in the Mention Python SDK
+---
+
+The Mention Python SDK provides a hierarchy of exception classes to help you handle different types of errors gracefully.
+
+## Exception hierarchy
+
+All SDK exceptions inherit from the base `MentionError` class:
+
+```
+MentionError (base)
+├── MentionAPIError
+│   ├── MentionAuthError (401, 403)
+│   ├── MentionNotFoundError (404)
+│   └── MentionRateLimitError (429)
+├── MentionValidationError
+└── MentionConnectionError
+```
+
+## Exception types
+
+### MentionError
+
+Base exception class for all Mention SDK errors.
+
+```python
+class MentionError(Exception):
+    def __init__(self, message: str, *, details: dict[str, Any] | None = None):
+        self.message = message
+        self.details = details or {}
+```
+
+**Attributes:**
+- `message` (str): Human-readable error message
+- `details` (dict): Additional error details
+
+### MentionAPIError
+
+Raised when the API returns an error response (4xx or 5xx status codes).
+
+```python
+class MentionAPIError(MentionError):
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int,
+        response_body: dict[str, Any] | str | None = None,
+    ):
+        self.status_code = status_code
+        self.response_body = response_body
+```
+
+**Attributes:**
+- `status_code` (int): HTTP status code
+- `response_body` (dict | str): Raw response body from the API
+
+**Example:**
+
+```python
+from mention import MentionClient, MentionAPIError
+
+client = MentionClient(access_token="your-token")
+
+try:
+    alert = client.get_alert(account_id="123", alert_id="999")
+except MentionAPIError as e:
+    print(f"API error: {e.message}")
+    print(f"Status code: {e.status_code}")
+    print(f"Response: {e.response_body}")
+```
+
+### MentionAuthError
+
+Raised for authentication and authorization errors (HTTP 401 or 403).
+
+Inherits from `MentionAPIError`.
+
+**When raised:**
+- Invalid or expired access token (401)
+- Insufficient permissions (403)
+- Missing authentication credentials (401)
+
+**Example:**
+
+```python
+from mention import MentionClient, MentionAuthError
+
+client = MentionClient(access_token="invalid-token")
+
+try:
+    account = client.get_account_me()
+except MentionAuthError as e:
+    print(f"Authentication failed: {e}")
+    if e.status_code == 401:
+        print("Token is invalid or expired")
+    elif e.status_code == 403:
+        print("Insufficient permissions")
+```
+
+### MentionNotFoundError
+
+Raised when a requested resource is not found (HTTP 404).
+
+Inherits from `MentionAPIError`.
+
+**When raised:**
+- Account, alert, mention, or other resource doesn't exist
+- Invalid resource ID
+- Resource has been deleted
+
+**Example:**
+
+```python
+from mention import MentionClient, MentionNotFoundError
+
+client = MentionClient(access_token="your-token")
+
+try:
+    alert = client.get_alert(account_id="123", alert_id="nonexistent")
+except MentionNotFoundError as e:
+    print(f"Resource not found: {e}")
+    print(f"Status code: {e.status_code}")  # 404
+```
+
+### MentionRateLimitError
+
+Raised when the API rate limit is exceeded (HTTP 429).
+
+Inherits from `MentionAPIError`.
+
+```python
+class MentionRateLimitError(MentionAPIError):
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int = 429,
+        response_body: dict[str, Any] | str | None = None,
+        retry_after: int | None = None,
+    ):
+        self.retry_after = retry_after
+```
+
+**Attributes:**
+- `retry_after` (int | None): Number of seconds to wait before retrying (from `Retry-After` header)
+
+**Example:**
+
+```python
+import time
+from mention import MentionClient, MentionRateLimitError
+
+client = MentionClient(access_token="your-token")
+
+try:
+    mentions = client.get_mentions(account_id="123", alert_id="456")
+except MentionRateLimitError as e:
+    print(f"Rate limit exceeded: {e}")
+    if e.retry_after:
+        print(f"Retry after {e.retry_after} seconds")
+        time.sleep(e.retry_after)
+        # Retry the request
+        mentions = client.get_mentions(account_id="123", alert_id="456")
+```
+
+<Note>
+The SDK automatically retries rate-limited requests based on the `max_retries` configuration. This exception is only raised if all retries are exhausted.
+</Note>
+
+### MentionValidationError
+
+Raised for request validation errors.
+
+Inherits from `MentionError`.
+
+**When raised:**
+- Invalid request parameters
+- Missing required fields
+- Data validation failures
+
+**Example:**
+
+```python
+from mention import MentionClient, MentionValidationError
+
+client = MentionClient(access_token="your-token")
+
+try:
+    # Invalid request data
+    alert = client.create_alert(account_id="123", request=invalid_data)
+except MentionValidationError as e:
+    print(f"Validation error: {e.message}")
+    print(f"Details: {e.details}")
+```
+
+### MentionConnectionError
+
+Raised for network and connection errors.
+
+Inherits from `MentionError`.
+
+**When raised:**
+- Network connection failures
+- Request timeouts
+- DNS resolution errors
+- All retries exhausted
+
+**Example:**
+
+```python
+from mention import MentionClient, MentionConnectionError
+
+client = MentionClient(
+    access_token="your-token",
+    timeout=5.0,
+    max_retries=3
+)
+
+try:
+    account = client.get_account_me()
+except MentionConnectionError as e:
+    print(f"Connection failed: {e}")
+    # Check if it's a timeout
+    if "timed out" in str(e).lower():
+        print("Request timed out after 5 seconds")
+```
+
+## Error handling patterns
+
+### Handle specific errors
+
+Catch specific exception types to handle different scenarios:
+
+```python
+from mention import (
+    MentionClient,
+    MentionAuthError,
+    MentionNotFoundError,
+    MentionRateLimitError,
+    MentionConnectionError,
+)
+
+client = MentionClient(access_token="your-token")
+
+try:
+    alert = client.get_alert(account_id="123", alert_id="456")
+except MentionAuthError:
+    print("Authentication failed - check your token")
+except MentionNotFoundError:
+    print("Alert not found - check the IDs")
+except MentionRateLimitError as e:
+    print(f"Rate limited - retry after {e.retry_after} seconds")
+except MentionConnectionError:
+    print("Network error - check your connection")
+```
+
+### Catch all API errors
+
+Use `MentionAPIError` to catch all HTTP error responses:
+
+```python
+from mention import MentionClient, MentionAPIError
+
+client = MentionClient(access_token="your-token")
+
+try:
+    alert = client.get_alert(account_id="123", alert_id="456")
+except MentionAPIError as e:
+    print(f"API error [{e.status_code}]: {e.message}")
+    print(f"Response: {e.response_body}")
+```
+
+### Catch all SDK errors
+
+Use `MentionError` to catch all SDK exceptions:
+
+```python
+from mention import MentionClient, MentionError
+
+client = MentionClient(access_token="your-token")
+
+try:
+    alert = client.get_alert(account_id="123", alert_id="456")
+except MentionError as e:
+    print(f"SDK error: {e.message}")
+    print(f"Details: {e.details}")
+```
+
+### Retry with exponential backoff
+
+Implement custom retry logic for specific operations:
+
+```python
+import time
+from mention import MentionClient, MentionRateLimitError, MentionConnectionError
+
+client = MentionClient(access_token="your-token")
+
+def fetch_with_retry(max_attempts=5):
+    for attempt in range(max_attempts):
+        try:
+            return client.get_alerts(account_id="123")
+        except MentionRateLimitError as e:
+            if attempt < max_attempts - 1:
+                delay = e.retry_after or (2 ** attempt)
+                print(f"Rate limited, waiting {delay}s...")
+                time.sleep(delay)
+            else:
+                raise
+        except MentionConnectionError:
+            if attempt < max_attempts - 1:
+                delay = 2 ** attempt
+                print(f"Connection error, retrying in {delay}s...")
+                time.sleep(delay)
+            else:
+                raise
+
+alerts = fetch_with_retry()
+```
+
+### Async error handling
+
+Error handling works the same way with `AsyncMentionClient`:
+
+```python
+import asyncio
+from mention import AsyncMentionClient, MentionAuthError, MentionAPIError
+
+async def fetch_account():
+    async with AsyncMentionClient(access_token="your-token") as client:
+        try:
+            account = await client.get_account_me()
+            return account
+        except MentionAuthError:
+            print("Authentication failed")
+            return None
+        except MentionAPIError as e:
+            print(f"API error: {e}")
+            return None
+
+account = asyncio.run(fetch_account())
+```
+
+## Best practices
+
+1. **Always catch specific exceptions first**: Handle specific error types before catching broader exception classes
+2. **Log error details**: Include `status_code` and `response_body` in your logs for debugging
+3. **Respect rate limits**: Use `retry_after` when handling `MentionRateLimitError`
+4. **Use context managers**: They ensure proper cleanup even when exceptions occur
+5. **Don't ignore errors**: Always handle or log exceptions appropriately

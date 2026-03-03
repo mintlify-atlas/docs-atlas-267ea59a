@@ -1,0 +1,553 @@
+---
+title: "Async Usage"
+description: "Use AsyncMentionClient for non-blocking, high-performance operations"
+---
+
+## Overview
+
+The Mention Python SDK provides an async client (`AsyncMentionClient`) for non-blocking I/O operations. This is ideal for:
+
+- High-throughput applications
+- Concurrent API requests
+- Web frameworks like FastAPI, Starlette, or aiohttp
+- Processing multiple alerts or mentions in parallel
+
+## Installation
+
+The async client uses `httpx.AsyncClient` under the hood, which is included with the SDK:
+
+```bash
+pip install mention-python
+```
+
+## Basic Usage
+
+The `AsyncMentionClient` has the same API as `MentionClient`, but all methods are async:
+
+```python
+import asyncio
+from mention import AsyncMentionClient
+
+async def main():
+    # Create async client
+    async with AsyncMentionClient(access_token="your-token") as client:
+        # Get alerts
+        alerts = await client.get_alerts("your-account-id")
+        
+        print(f"Found {len(alerts.alerts)} alerts")
+        for alert in alerts.alerts:
+            print(f"- {alert.name}")
+
+# Run the async function
+asyncio.run(main())
+```
+
+## Async Context Manager
+
+Always use the async context manager to ensure proper cleanup:
+
+<CodeGroup>
+
+```python With Context Manager (Recommended)
+import asyncio
+from mention import AsyncMentionClient
+
+async def main():
+    async with AsyncMentionClient(access_token="your-token") as client:
+        alerts = await client.get_alerts("account-id")
+        # Client is automatically closed
+        return alerts
+
+asyncio.run(main())
+```
+
+```python Manual Cleanup
+import asyncio
+from mention import AsyncMentionClient
+
+async def main():
+    client = AsyncMentionClient(access_token="your-token")
+    try:
+        alerts = await client.get_alerts("account-id")
+        return alerts
+    finally:
+        await client.aclose()  # Manual cleanup
+
+asyncio.run(main())
+```
+
+</CodeGroup>
+
+## Creating from Config
+
+Create an async client from a configuration object:
+
+```python
+import asyncio
+from mention import AsyncMentionClient, MentionConfig
+
+async def main():
+    # Load config from environment
+    config = MentionConfig.from_env()
+    
+    # Create async client from config
+    async with AsyncMentionClient.from_config(config) as client:
+        data = await client.get_app_data()
+        print(f"Available sources: {data.sources}")
+
+asyncio.run(main())
+```
+
+## Working with Alerts
+
+All alert operations support async/await:
+
+<Tabs>
+  <Tab title="List Alerts">
+    ```python
+    import asyncio
+    from mention import AsyncMentionClient
+
+    async def list_alerts():
+        async with AsyncMentionClient(access_token="your-token") as client:
+            response = await client.get_alerts("account-id")
+            
+            for alert in response.alerts:
+                print(f"{alert.name}: {alert.mentions_count} mentions")
+
+    asyncio.run(list_alerts())
+    ```
+  </Tab>
+  
+  <Tab title="Get Alert">
+    ```python
+    import asyncio
+    from mention import AsyncMentionClient
+
+    async def get_alert_details():
+        async with AsyncMentionClient(access_token="your-token") as client:
+            alert = await client.get_alert(
+                account_id="account-id",
+                alert_id="alert-123"
+            )
+            
+            print(f"Alert: {alert.name}")
+            print(f"Keywords: {alert.query.included_keywords}")
+
+    asyncio.run(get_alert_details())
+    ```
+  </Tab>
+  
+  <Tab title="Create Alert">
+    ```python
+    import asyncio
+    from mention import AsyncMentionClient
+    from mention.models import CreateAlertRequest, AlertQuery, QueryType
+
+    async def create_alert():
+        async with AsyncMentionClient(access_token="your-token") as client:
+            request = CreateAlertRequest(
+                name="Async Alert",
+                query=AlertQuery(
+                    type=QueryType.BASIC,
+                    included_keywords=["async", "python"]
+                ),
+                languages=["en"],
+                sources=["twitter", "reddit"]
+            )
+            
+            alert = await client.create_alert("account-id", request)
+            print(f"Created: {alert.id}")
+
+    asyncio.run(create_alert())
+    ```
+  </Tab>
+  
+  <Tab title="Update Alert">
+    ```python
+    import asyncio
+    from mention import AsyncMentionClient
+    from mention.models import UpdateAlertRequest
+
+    async def update_alert():
+        async with AsyncMentionClient(access_token="your-token") as client:
+            request = UpdateAlertRequest(
+                name="Updated Async Alert",
+                sources=["twitter", "reddit", "news"]
+            )
+            
+            alert = await client.update_alert(
+                account_id="account-id",
+                alert_id="alert-123",
+                request=request
+            )
+            print(f"Updated: {alert.name}")
+
+    asyncio.run(update_alert())
+    ```
+  </Tab>
+</Tabs>
+
+## Working with Mentions
+
+Async mention operations for high-throughput processing:
+
+```python
+import asyncio
+from mention import AsyncMentionClient
+
+async def process_mentions():
+    async with AsyncMentionClient(access_token="your-token") as client:
+        # Get mentions
+        response = await client.get_mentions(
+            account_id="account-id",
+            alert_id="alert-123",
+            limit=100,
+            read=False
+        )
+        
+        print(f"Processing {len(response.mentions)} mentions")
+        
+        for mention in response.mentions:
+            print(f"- {mention.title}")
+
+asyncio.run(process_mentions())
+```
+
+### Curating Mentions
+
+```python
+import asyncio
+from mention import AsyncMentionClient
+from mention.models import CurateMentionRequest, Tone
+
+async def curate_mention():
+    async with AsyncMentionClient(access_token="your-token") as client:
+        request = CurateMentionRequest(
+            read=True,
+            favorite=True,
+            tone=Tone.POSITIVE
+        )
+        
+        mention = await client.curate_mention(
+            account_id="account-id",
+            alert_id="alert-123",
+            mention_id="mention-456",
+            request=request
+        )
+        
+        print(f"Curated: {mention.title}")
+
+asyncio.run(curate_mention())
+```
+
+## Concurrent Operations
+
+Process multiple requests in parallel using `asyncio.gather()`:
+
+```python
+import asyncio
+from mention import AsyncMentionClient
+
+async def get_alert_mentions(client, account_id, alert_id):
+    """Fetch mentions for a single alert."""
+    mentions = await client.get_mentions(
+        account_id=account_id,
+        alert_id=alert_id,
+        limit=50
+    )
+    return alert_id, mentions
+
+async def process_all_alerts():
+    async with AsyncMentionClient(access_token="your-token") as client:
+        account_id = "account-id"
+        
+        # Get all alerts
+        alerts_response = await client.get_alerts(account_id)
+        alert_ids = [alert.id for alert in alerts_response.alerts]
+        
+        # Fetch mentions for all alerts concurrently
+        tasks = [
+            get_alert_mentions(client, account_id, alert_id)
+            for alert_id in alert_ids
+        ]
+        
+        results = await asyncio.gather(*tasks)
+        
+        # Process results
+        for alert_id, mentions in results:
+            print(f"Alert {alert_id}: {len(mentions.mentions)} mentions")
+
+asyncio.run(process_all_alerts())
+```
+
+## Streaming Mentions
+
+Stream mentions asynchronously in real-time:
+
+```python
+import asyncio
+from datetime import datetime
+from mention import AsyncMentionClient
+
+async def stream_new_mentions():
+    async with AsyncMentionClient(access_token="your-token") as client:
+        print("Starting async mention stream...")
+        
+        async for mention in client.stream_mentions(
+            account_id="account-id",
+            alert_id="alert-123",
+            since=datetime.now()
+        ):
+            print(f"\n🔔 New mention: {mention.title}")
+            print(f"   Source: {mention.source_name}")
+            print(f"   Published: {mention.published_at}")
+
+asyncio.run(stream_new_mentions())
+```
+
+<Note>
+The `stream_mentions()` method returns an `AsyncIterator` for use with `async for` loops.
+</Note>
+
+## FastAPI Integration
+
+Use `AsyncMentionClient` with FastAPI for high-performance web APIs:
+
+```python
+from fastapi import FastAPI, HTTPException, Depends
+from mention import AsyncMentionClient, MentionConfig
+from mention.exceptions import MentionNotFoundError
+
+app = FastAPI()
+
+async def get_client():
+    """Dependency that provides an async Mention client."""
+    config = MentionConfig.from_env()
+    async with AsyncMentionClient.from_config(config) as client:
+        yield client
+
+@app.get("/alerts/{account_id}")
+async def list_alerts(
+    account_id: str,
+    client: AsyncMentionClient = Depends(get_client)
+):
+    """List all alerts for an account."""
+    response = await client.get_alerts(account_id)
+    return {"alerts": [alert.model_dump() for alert in response.alerts]}
+
+@app.get("/alerts/{account_id}/{alert_id}/mentions")
+async def get_mentions(
+    account_id: str,
+    alert_id: str,
+    limit: int = 100,
+    read: bool | None = None,
+    client: AsyncMentionClient = Depends(get_client)
+):
+    """Get mentions for an alert."""
+    try:
+        response = await client.get_mentions(
+            account_id=account_id,
+            alert_id=alert_id,
+            limit=limit,
+            read=read
+        )
+        return {
+            "mentions": [m.model_dump() for m in response.mentions],
+            "count": len(response.mentions)
+        }
+    except MentionNotFoundError:
+        raise HTTPException(status_code=404, detail="Alert not found")
+```
+
+## Background Tasks
+
+Process mentions in the background with asyncio:
+
+```python
+import asyncio
+from mention import AsyncMentionClient
+from mention.models import CurateMentionRequest, Tone
+
+async def auto_curate_mentions(account_id: str, alert_id: str):
+    """Background task to auto-curate mentions."""
+    async with AsyncMentionClient(access_token="your-token") as client:
+        while True:
+            # Get unread mentions
+            response = await client.get_mentions(
+                account_id=account_id,
+                alert_id=alert_id,
+                read=False,
+                limit=50
+            )
+            
+            # Process each mention
+            for mention in response.mentions:
+                # Auto-favorite positive mentions
+                if mention.tone == Tone.POSITIVE:
+                    await client.curate_mention(
+                        account_id=account_id,
+                        alert_id=alert_id,
+                        mention_id=mention.id,
+                        request=CurateMentionRequest(
+                            favorite=True,
+                            read=True
+                        )
+                    )
+                    print(f"✓ Favorited: {mention.title}")
+            
+            # Wait before next check
+            await asyncio.sleep(60)  # Check every minute
+
+# Run in background
+async def main():
+    task = asyncio.create_task(
+        auto_curate_mentions("account-id", "alert-123")
+    )
+    
+    try:
+        await task
+    except KeyboardInterrupt:
+        task.cancel()
+        print("Background task stopped")
+
+asyncio.run(main())
+```
+
+## Error Handling
+
+Handle errors in async code:
+
+```python
+import asyncio
+from mention import AsyncMentionClient
+from mention.exceptions import (
+    MentionAPIError,
+    MentionRateLimitError,
+    MentionConnectionError
+)
+
+async def safe_api_call():
+    async with AsyncMentionClient(access_token="your-token") as client:
+        try:
+            alerts = await client.get_alerts("account-id")
+            return alerts
+        except MentionRateLimitError as e:
+            print(f"Rate limited. Retry after {e.retry_after}s")
+            await asyncio.sleep(e.retry_after or 60)
+            # Retry logic here
+        except MentionConnectionError as e:
+            print(f"Connection error: {e}")
+            # Handle connection issues
+        except MentionAPIError as e:
+            print(f"API error: {e.status_code} - {e}")
+            # Handle other API errors
+
+asyncio.run(safe_api_call())
+```
+
+## Complete Example
+
+A complete async application processing mentions:
+
+```python
+import asyncio
+from datetime import datetime, timedelta
+from mention import AsyncMentionClient, MentionConfig
+from mention.models import CurateMentionRequest, Tone
+
+async def process_alert(client, account_id, alert_id):
+    """Process mentions for a single alert."""
+    # Get mentions from last 24 hours
+    response = await client.get_mentions(
+        account_id=account_id,
+        alert_id=alert_id,
+        not_before_date=datetime.now() - timedelta(days=1),
+        read=False,
+        limit=100
+    )
+    
+    print(f"Processing {len(response.mentions)} mentions for alert {alert_id}")
+    
+    for mention in response.mentions:
+        # Favorite positive mentions
+        if mention.tone == Tone.POSITIVE:
+            await client.curate_mention(
+                account_id=account_id,
+                alert_id=alert_id,
+                mention_id=mention.id,
+                request=CurateMentionRequest(
+                    favorite=True,
+                    read=True
+                )
+            )
+    
+    return len(response.mentions)
+
+async def main():
+    # Load configuration
+    config = MentionConfig.from_env()
+    account_id = config.account_id or "your-account-id"
+    
+    async with AsyncMentionClient.from_config(config) as client:
+        # Get all alerts
+        alerts = await client.get_alerts(account_id)
+        print(f"Found {len(alerts.alerts)} alerts\n")
+        
+        # Process all alerts concurrently
+        tasks = [
+            process_alert(client, account_id, alert.id)
+            for alert in alerts.alerts
+        ]
+        
+        results = await asyncio.gather(*tasks)
+        
+        total_mentions = sum(results)
+        print(f"\n✓ Processed {total_mentions} total mentions")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Performance Tips
+
+<AccordionGroup>
+  <Accordion title="Use connection pooling">
+    The async client reuses HTTP connections automatically via `httpx.AsyncClient`. This significantly improves performance for multiple requests.
+  </Accordion>
+  
+  <Accordion title="Batch operations with gather()">
+    Use `asyncio.gather()` to run independent API calls concurrently:
+    
+    ```python
+    results = await asyncio.gather(
+        client.get_alerts(account_id),
+        client.get_mentions(account_id, alert_id_1),
+        client.get_mentions(account_id, alert_id_2)
+    )
+    ```
+  </Accordion>
+  
+  <Accordion title="Limit concurrency">
+    Use semaphores to control concurrent requests:
+    
+    ```python
+    sem = asyncio.Semaphore(5)  # Max 5 concurrent requests
+    
+    async def limited_request(client, account_id, alert_id):
+        async with sem:
+            return await client.get_mentions(account_id, alert_id)
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="CLI Usage" icon="terminal" href="/guides/cli-usage">
+    Use the command-line interface for quick operations
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/mention-client">
+    Explore the complete API documentation
+  </Card>
+</CardGroup>
